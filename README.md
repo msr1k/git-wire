@@ -5,6 +5,22 @@ A git custom subcommand
 which injects part of other repositoriy's source code
 into the repository in a declarative manner.
 
+Instration
+----------
+
+- If your environment have rust installed:
+
+    ```
+    $ cargo install --git https://github.com/msr1k/git-wire.git
+    ```
+
+    Or, you can build from source if you clone this repository.
+
+- In other cases:
+
+    Currently not supported.
+
+
 Preparation
 -----------
 
