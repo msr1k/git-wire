@@ -58,6 +58,17 @@ and returns with exit code 1, otherwise returns with 0.
 
     $ git wire check
 
+## Changelog
+
+- v1.0.1
+
+    Replace one dependent crate with one of others to reduce unwanted dependencies.  
+    (No functionality changes have been made from v1.0.0.)
+
+- v1.0.0
+
+    Initial Version.
+
 ## License
 
 The MIT License
