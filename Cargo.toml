@@ -3,7 +3,10 @@ name = "git-wire"
 version = "1.0.0"
 edition = "2021"
 authors = ["msr1k <msr0210@gmail.com>"]
-description = "Wiring part of other repository's code."
+description = """
+Wiring part of other repository's code.
+(Please see "https://github.com/msr1k/git-wire" for details.)
+"""
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
