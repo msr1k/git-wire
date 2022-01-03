@@ -2,7 +2,7 @@ use std::process::Command;
 
 use cause::Cause;
 use cause::cause;
-use tempdir::TempDir;
+use temp_dir::TempDir;
 use regex::Regex;
 
 
@@ -13,7 +13,7 @@ use super::Parsed;
 pub fn fetch_target_to_tempdir(parsed: &Parsed)
     -> Result<TempDir, Cause<ErrorType>>
 {
-    let tempdir = TempDir::new("git-wire")
+    let tempdir = TempDir::new()
         .or_else(|e| Err(cause!(TempDirCreationError).src(e)))?;
 
     std::env::set_current_dir(tempdir.path())

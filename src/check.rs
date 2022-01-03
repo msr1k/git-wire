@@ -3,7 +3,6 @@ use std::path::Path;
 use cause::Cause;
 use cause::cause;
 use folder_compare::FolderCompare;
-use regex::Regex;
 
 use crate::common;
 use crate::common::Parsed;
@@ -31,6 +30,7 @@ pub fn check() -> Result<bool, Cause<ErrorType>> {
 fn compare_with_temp(parsed: &Parsed, root: &str, temp: &Path) -> Result<bool, Cause<ErrorType>> {
     println!("  - compare `src` and `dst`");
 
+    let temp_root = temp.clone();
     let temp = temp.join(parsed.src.clone());
     let root = Path::new(root).join(parsed.dst.clone());
 
@@ -42,12 +42,12 @@ fn compare_with_temp(parsed: &Parsed, root: &str, temp: &Path) -> Result<bool, C
     let mut result = true;
 
     if fc1.new_files.len() > 0 {
+        let temp_root = temp_root.to_str()
+            .ok_or_else(|| cause!(CheckDifferenceStringReplaceError))?;
         for file in fc1.new_files {
             let file = file.to_str()
                 .ok_or_else(|| cause!(CheckDifferenceStringReplaceError))?;
-            let re = Regex::new(r"^.*?git-wire[^/]*/")
-                .or_else(|e| Err(cause!(CheckDifferenceStringReplaceError).src(e)))?;
-            let file = re.replace(file, "");
+            let file = file.replace(temp_root, "");
             println!("  ! file {:?} does not exist", file);
         }
         result = false;
