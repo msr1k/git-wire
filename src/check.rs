@@ -60,7 +60,7 @@ fn compare_with_temp(parsed: &Parsed, root: &str, temp: &Path) -> Result<bool, C
     }
     if fc2.changed_files.len() > 0 {
         for file in fc2.changed_files {
-            println!("  ! file {:?} does not identical to original", file);
+            println!("  ! file {:?} is not identical to original", file);
         }
         result = false;
     }

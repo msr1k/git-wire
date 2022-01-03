@@ -6,21 +6,21 @@ mod check;
 mod common;
 
 fn main() {
-    let app = App::new("git-wire")
-        .version("1.0")
-        .author("msr1k <msr0210@gmail.com>")
-        .about("Wiring part of other repository's code.")
+    let app = App::new(clap::crate_name!())
+        .version(clap::crate_version!())
+        .author(clap::crate_authors!())
+        .about(clap::crate_description!())
         .setting(AppSettings::SubcommandRequired);
 
     let app = app.subcommand(
         SubCommand::with_name("sync")
-            .about("Synchronize code depending on a file '.gitwire' definition.")
+            .about("Synchronizes code depending on a file '.gitwire' definition.")
             // .arg_from_usage("-v, --verbose 'Verbosely output the command result.'")
     );
 
     let app = app.subcommand(
         SubCommand::with_name("check")
-            .about("Check if the synchronized code identical to the original.")
+            .about("Checks if the synchronized code identical to the original.")
             // .arg_from_usage("-v, --verbose 'Verbosely output the command result.'")
     );
 
