@@ -3,6 +3,7 @@ name = "git-wire"
 version = "1.0.0"
 edition = "2021"
 authors = ["msr1k <msr0210@gmail.com>"]
+license = "MIT"
 description = """
 Wiring part of other repository's code.
 (Please see "https://github.com/msr1k/git-wire" for details.)
