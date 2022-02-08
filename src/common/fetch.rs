@@ -20,7 +20,16 @@ pub fn fetch_target_to_tempdir(parsed: &Parsed)
         .or_else(|e| Err(cause!(GitCheckoutChangeDirectoryError).src(e)))?;
 
     git_clone(parsed)?;
-    git_checkout(parsed)?;
+    match parsed.mtd.as_ref() {
+        Some(x) => {
+            match x.as_ref() {
+                "shallow" => git_checkout_shallow(parsed)?,
+                "partial" => git_checkout_partial(parsed)?,
+                _ => git_checkout_partial(parsed)?,
+            };
+        },
+        None => git_checkout_partial(parsed)?,
+    };
 
     Ok(tempdir)
 }
@@ -49,7 +58,7 @@ fn git_clone(parsed: &Parsed) -> Result<(), Cause<ErrorType>> {
     }
 }
 
-fn git_checkout(parsed: &Parsed) -> Result<(), Cause<ErrorType>> {
+fn git_checkout_partial(parsed: &Parsed) -> Result<(), Cause<ErrorType>> {
     let rev = identify_commit_hash(parsed)?;
     let rev = if let Some(r) = rev {
         println!("  - checkout: {} ({})", r, parsed.rev);
@@ -65,6 +74,50 @@ fn git_checkout(parsed: &Parsed) -> Result<(), Cause<ErrorType>> {
             rev.as_ref(),
             "--",
             parsed.src.as_ref(),
+        ])
+        .output()
+        .or_else(|e| Err(cause!(GitCheckoutCommandError).src(e)))?;
+
+    if out.status.success() {
+        Ok(())
+    } else {
+        let error = String::from_utf8(out.stderr)
+            .unwrap_or("Could not get even a error output of git checkout command".into());
+        Err(cause!(GitCheckoutCommandExitStatusError, error))
+    }
+}
+
+fn git_checkout_shallow(parsed: &Parsed) -> Result<(), Cause<ErrorType>> {
+    let rev = identify_commit_hash(parsed)?;
+    let rev = if let Some(r) = rev {
+        println!("  - checkout: {} ({})", r, parsed.rev);
+        r
+    } else {
+        println!("  - checkout: {}", parsed.rev);
+        parsed.rev.to_owned()
+    };
+
+    let out = Command::new("git")
+        .args([
+            "fetch",
+            "--depth",
+            "1",
+            "origin",
+            rev.as_ref(),
+        ])
+        .output()
+        .or_else(|e| Err(cause!(GitFetchCommandError).src(e)))?;
+
+    if !out.status.success() {
+        let error = String::from_utf8(out.stderr)
+            .unwrap_or("Could not get even a error output of git checkout command".into());
+        return Err(cause!(GitFetchCommandExitStatusError, error));
+    }
+
+    let out = Command::new("git")
+        .args([
+            "checkout",
+            "FETCH_HEAD",
         ])
         .output()
         .or_else(|e| Err(cause!(GitCheckoutCommandError).src(e)))?;

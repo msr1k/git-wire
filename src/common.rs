@@ -14,6 +14,8 @@ pub enum ErrorType {
     GitCheckoutCommandError,
     GitCheckoutCommandExitStatusError,
     GitCheckoutChangeDirectoryError,
+    GitFetchCommandError,
+    GitFetchCommandExitStatusError,
     MoveFromTempToDestError,
     CheckDifferenceExecutionError(Error),
     CheckDifferenceStringReplaceError,
@@ -29,6 +31,7 @@ pub struct Parsed {
     pub rev: String,
     pub src: String,
     pub dst: String,
+    pub mtd: Option<String>,
 }
 
 pub mod parse;
