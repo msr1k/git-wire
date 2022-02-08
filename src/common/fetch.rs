@@ -61,10 +61,10 @@ fn git_clone(parsed: &Parsed) -> Result<(), Cause<ErrorType>> {
 fn git_checkout_partial(parsed: &Parsed) -> Result<(), Cause<ErrorType>> {
     let rev = identify_commit_hash(parsed)?;
     let rev = if let Some(r) = rev {
-        println!("  - checkout: {} ({})", r, parsed.rev);
+        println!("  - checkout partial: {} ({})", r, parsed.rev);
         r
     } else {
-        println!("  - checkout: {}", parsed.rev);
+        println!("  - checkout partial: {}", parsed.rev);
         parsed.rev.to_owned()
     };
 
@@ -90,10 +90,10 @@ fn git_checkout_partial(parsed: &Parsed) -> Result<(), Cause<ErrorType>> {
 fn git_checkout_shallow(parsed: &Parsed) -> Result<(), Cause<ErrorType>> {
     let rev = identify_commit_hash(parsed)?;
     let rev = if let Some(r) = rev {
-        println!("  - checkout: {} ({})", r, parsed.rev);
+        println!("  - checkout shallow: {} ({})", r, parsed.rev);
         r
     } else {
-        println!("  - checkout: {}", parsed.rev);
+        println!("  - checkout shallow: {}", parsed.rev);
         parsed.rev.to_owned()
     };
 
