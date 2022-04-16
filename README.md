@@ -1,8 +1,8 @@
 git-wire
 ========
 
-A git custom subcommand
-which injects part of other repositoriy's source code
+A git subcommand
+which wires part of other repositoriy's source code
 into the repository in a declarative manner.
 
 Instration
@@ -67,6 +67,7 @@ If you `sync` only small number of files of hugely large repository, `"partial"`
 but, if it's not, `"shallow"` is more appropriate in many cases,
 though it varies depending on the target repository to sync.
 
+
 Commands
 --------
 
@@ -87,12 +88,19 @@ and returns with exit code 1, otherwise returns with 0.
 
     $ git wire check
 
+
+A sample .gitwire
+-----------------
+
+This `.gitwire` sample wires this repository's `src` at revision v1.0.0 into `src_v1.0.0` directory.
+https://github.com/msr1k/git-wire/blob/main/.gitignore
+
 ## Changelog
 
 - v1.1.1
 
-    Change default checkout method from `"partial"` to `"shallow"`.
-    It seems that, in most cases, `"shallow"` is faster and stabler.
+    Change default checkout method from `"partial"` to `"shallow"`,
+    since it seems that, in most cases, `"shallow"` is faster and stabler.
 
 - v1.1.0
 
@@ -107,6 +115,8 @@ and returns with exit code 1, otherwise returns with 0.
 
     Initial Version.
 
-## License
+
+License
+-------
 
 The MIT License
