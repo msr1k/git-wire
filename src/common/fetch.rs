@@ -20,16 +20,12 @@ pub fn fetch_target_to_tempdir(parsed: &Parsed)
         .or_else(|e| Err(cause!(GitCheckoutChangeDirectoryError).src(e)))?;
 
     git_clone(parsed)?;
-    match parsed.mtd.as_ref() {
-        Some(x) => {
-            match x.as_ref() {
-                "shallow" => git_checkout_shallow(parsed)?,
-                "partial" => git_checkout_partial(parsed)?,
-                _ => git_checkout_partial(parsed)?,
-            };
-        },
-        None => git_checkout_partial(parsed)?,
-    };
+
+    let mut method: fn(&Parsed) -> Result<(), Cause<ErrorType>> = git_checkout_shallow;
+    if let Some(x) = parsed.mtd.as_ref() {
+        if x == "partial" { method = git_checkout_partial; }
+    }
+    method(parsed)?;
 
     Ok(tempdir)
 }

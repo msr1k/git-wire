@@ -1,8 +1,8 @@
 git-wire
 ========
 
-A git custom subcommand
-which injects part of other repositoriy's source code
+A git subcommand
+which wires part of other repositoriy's source code
 into the repository in a declarative manner.
 
 Instration
@@ -38,7 +38,7 @@ Create a file named `.gitwire` at the root of the repository with following JSON
 ]
 ```
 
-Optionally, you can select a method to checkout src from url like below.
+Optionally, you can select a method, `shallow` or `partial`, to checkout src like below.
 
 ```json
 [
@@ -47,24 +47,26 @@ Optionally, you can select a method to checkout src from url like below.
     "rev": "revision (commit hash or branch name or tag name)",
     "src": "source directory of the target repository",
     "dst": "directory where to put the `src` on this repositry",
-    "mtd": "partial/shallow"
+    "mtd": "shallow/partial"
   },
   ...
 ]
 ```
 
-Where `"partial"` is default behaviour and it only gets files under a specified directory.
+Where `"shallow"` is default behavior, it gets all the files in specified `rev` at once,
+it inherently requires more memory and temporary storage than `"partial"`,
+but it might be faster if there are many files to `sync`.
+
+While `"partial"` only gets files under a specified directory.
 It is sperior than `"shallow"` in terms of memory and temporary storage consumption,
 but since it performs downloading for each file one by one (it is mere git command behavior),
 it could take much time particularly as the number of files grows.
 (In the worst case, you might get an error)
 
-While `"shallow"` gets all the files in specified `rev` at once,
-it inherently requires more memory and temporary storage than `"partial"`,
-but it might be faster if there are many files to `sync`.
+If you `sync` only small number of files of hugely large repository, `"partial"` could be better choice,
+but, if it's not, `"shallow"` is more appropriate in many cases,
+though it varies depending on the target repository to sync.
 
-If you `sync` only small number of files, `"partial"` should be better choice,
-but, if it's not, it varies depending on the target repository to sync.
 
 Commands
 --------
@@ -86,7 +88,19 @@ and returns with exit code 1, otherwise returns with 0.
 
     $ git wire check
 
+
+A sample .gitwire
+-----------------
+
+This `.gitwire` sample wires this repository's `src` at revision v1.0.0 into `src_v1.0.0` directory.
+https://github.com/msr1k/git-wire/blob/main/.gitignore
+
 ## Changelog
+
+- v1.1.1
+
+    Change default checkout method from `"partial"` to `"shallow"`,
+    since it seems that, in most cases, `"shallow"` is faster and stabler.
 
 - v1.1.0
 
@@ -101,6 +115,8 @@ and returns with exit code 1, otherwise returns with 0.
 
     Initial Version.
 
-## License
+
+License
+-------
 
 The MIT License
