@@ -93,7 +93,7 @@ A sample .gitwire
 -----------------
 
 This `.gitwire` sample wires this repository's `src` at revision v1.0.0 into `src_v1.0.0` directory.
-https://github.com/msr1k/git-wire/blob/main/.gitignore
+https://github.com/msr1k/git-wire/blob/main/.gitwire
 
 ## Changelog
 
