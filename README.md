@@ -97,6 +97,11 @@ https://github.com/msr1k/git-wire/blob/main/.gitwire
 
 ## Changelog
 
+- v1.1.2
+
+    Update all dependent crate's versions.
+    Fix a typo.
+
 - v1.1.1
 
     Change default checkout method from `"partial"` to `"shallow"`,
