@@ -1,25 +1,26 @@
 use std::process::exit;
-use clap::{App,SubCommand,AppSettings};
+use clap::Command;
 
 mod sync;
 mod check;
 mod common;
 
 fn main() {
-    let app = App::new(clap::crate_name!())
+    let app = Command::new(clap::crate_name!())
         .version(clap::crate_version!())
         .author(clap::crate_authors!())
         .about(clap::crate_description!())
-        .setting(AppSettings::SubcommandRequired);
+        .arg_required_else_help(true)
+        .subcommand_required(true);
 
     let app = app.subcommand(
-        SubCommand::with_name("sync")
+        Command::new("sync")
             .about("Synchronizes code depending on a file '.gitwire' definition.")
             // .arg_from_usage("-v, --verbose 'Verbosely output the command result.'")
     );
 
     let app = app.subcommand(
-        SubCommand::with_name("check")
+        Command::new("check")
             .about("Checks if the synchronized code identical to the original.")
             // .arg_from_usage("-v, --verbose 'Verbosely output the command result.'")
     );
@@ -27,10 +28,9 @@ fn main() {
     let matches = app.get_matches();
 
     let result = match matches.subcommand() {
-        ("sync", Some(_)) => sync::sync(),
-        ("check", Some(_)) => check::check(),
+        Some(("sync", _)) => sync::sync(),
+        Some(("check", _)) => check::check(),
         _ => {
-            eprintln!("{}", matches.usage());
             std::process::exit(1);
         }
     };

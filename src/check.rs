@@ -10,7 +10,7 @@ use crate::common::ErrorType;
 use crate::common::ErrorType::*;
 
 pub fn check() -> Result<bool, Cause<ErrorType>> {
-    println!("git-wire check startd\n");
+    println!("git-wire check started\n");
     let (rootdir, parsed) = common::parse::parse_gitwire()?;
 
     let len = parsed.len();
