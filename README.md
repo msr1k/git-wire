@@ -97,6 +97,12 @@ https://github.com/msr1k/git-wire/blob/main/.gitwire
 
 ## Changelog
 
+- v1.1.3
+
+    Fixed: if target repository placed somewhere including `.git`,
+    `git wire check` wrongly ignores all the files in this repository,
+    and no changes detected if it exists.
+
 - v1.1.2
 
     Update all dependent crate's versions.
