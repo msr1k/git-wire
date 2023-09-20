@@ -34,14 +34,14 @@ fn move_from_temp(parsed: &Parsed, root: &str, temp: &Path) -> Result<(), Cause<
     opt.overwrite = true;
     opt.copy_inside = true;
 
-    fs_extra::remove_items(&[to.clone()])
+    fs_extra::remove_items(&[&to])
         .or_else(|e| {
             let cause = cause!(MoveFromTempToDestError).src(e)
                 .msg(format!("Could not remove {:?}", to));
             Err(cause)
         })?;
 
-    fs_extra::move_items(&[from.clone()], to.clone(), &opt)
+    fs_extra::move_items(&[&from], &to, &opt)
         .or_else(|e| {
             let cause = cause!(MoveFromTempToDestError).src(e)
                 .msg(format!("Could not copy from {:?} to {:?}", from, to));

@@ -34,9 +34,9 @@ fn compare_with_temp(parsed: &Parsed, root: &str, temp: &Path) -> Result<bool, C
     let temp = temp.join(parsed.src.clone());
     let root = Path::new(root).join(parsed.dst.clone());
 
-    let fc1 = FolderCompare::new(&temp, &root, &vec![".git".into()])
+    let fc1 = FolderCompare::new(&temp, &root, &vec![])
         .or_else(|e| Err(cause!(CheckDifferenceExecutionError(e))))?;
-    let fc2 = FolderCompare::new(&root, &temp, &vec![".git".into()])
+    let fc2 = FolderCompare::new(&root, &temp, &vec![])
         .or_else(|e| Err(cause!(CheckDifferenceExecutionError(e))))?;
 
     let mut result = true;
