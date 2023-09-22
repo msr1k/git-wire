@@ -48,19 +48,19 @@ fn compare_with_temp(parsed: &Parsed, root: &str, temp: &Path) -> Result<bool, C
             let file = file.to_str()
                 .ok_or_else(|| cause!(CheckDifferenceStringReplaceError))?;
             let file = file.replace(temp_root, "");
-            println!("  ! file {:?} does not exist", file);
+            println!("    ! file {:?} does not exist", file);
         }
         result = false;
     }
     if fc2.new_files.len() > 0 {
         for file in fc2.new_files {
-            println!("  ! file {:?} does not exist on original", file);
+            println!("    ! file {:?} does not exist on original", file);
         }
         result = false;
     }
     if fc2.changed_files.len() > 0 {
         for file in fc2.changed_files {
-            println!("  ! file {:?} is not identical to original", file);
+            println!("    ! file {:?} is not identical to original", file);
         }
         result = false;
     }
