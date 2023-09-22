@@ -63,7 +63,7 @@ If you omit `"mtd"` key, `"shallow"` method will be used automatically.
 
 
 #### shallow_no_sparse
-`"shallow"` gets all the files managed by that repository at once from specified `rev`,
+`"shallow_no_sparse"` gets all the files managed by that repository at once from specified `rev`,
 it inherently requires more memory and temporary storage than `"shallow"` and `"partial"`,
 but it must be faster than `"partial"` if there are many files to `sync`.  
 (It must not faster than `"shallow"`.)
