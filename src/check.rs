@@ -30,9 +30,9 @@ pub fn check() -> Result<bool, Cause<ErrorType>> {
 fn compare_with_temp(parsed: &Parsed, root: &str, temp: &Path) -> Result<bool, Cause<ErrorType>> {
     println!("  - compare `src` and `dst`");
 
-    let temp_root = temp.clone();
-    let temp = temp.join(parsed.src.clone());
-    let root = Path::new(root).join(parsed.dst.clone());
+    let temp_root = temp;
+    let temp = temp.join(parsed.src.as_str());
+    let root = Path::new(root).join(parsed.dst.as_str());
 
     let fc1 = FolderCompare::new(&temp, &root, &vec![])
         .or_else(|e| Err(cause!(CheckDifferenceExecutionError(e))))?;

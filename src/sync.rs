@@ -27,8 +27,8 @@ pub fn sync() -> Result<bool, Cause<ErrorType>> {
 fn move_from_temp(parsed: &Parsed, root: &str, temp: &Path) -> Result<(), Cause<ErrorType>> {
     println!("  - copy from `src` to `dst`");
 
-    let from = temp.join(parsed.src.clone());
-    let to = PathBuf::from(root).join(parsed.dst.clone());
+    let from = temp.join(parsed.src.as_str());
+    let to = PathBuf::from(root).join(parsed.dst.as_str());
 
     let mut opt = fs_extra::dir::CopyOptions::new();
     opt.overwrite = true;
