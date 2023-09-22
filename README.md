@@ -38,7 +38,7 @@ Create a file named `.gitwire` at the root of the repository with following JSON
 ]
 ```
 
-Optionally, you can select a method, `shallow` or `partial`, to checkout src like below.
+Optionally, you can select a method, `"shallow"`, `"shallow_no_sparse"`, and `"partial"` to checkout src like below.
 
 ```json
 [
@@ -47,26 +47,37 @@ Optionally, you can select a method, `shallow` or `partial`, to checkout src lik
     "rev": "revision (commit hash or branch name or tag name)",
     "src": "source directory of the target repository",
     "dst": "directory where to put the `src` on this repositry",
-    "mtd": "shallow/partial"
+    "mtd": "shallow/shallow_no_sparse/partial"
   },
   ...
 ]
 ```
 
-Where `"shallow"` is default behavior, it gets all the files in specified `rev` at once,
-it inherently requires more memory and temporary storage than `"partial"`,
-but it might be faster if there are many files to `sync`.
+### About checkout methods
 
-While `"partial"` only gets files under a specified directory.
-It is sperior than `"shallow"` in terms of memory and temporary storage consumption,
-but since it performs downloading for each file one by one (it is mere git command behavior),
-it could take much time particularly as the number of files grows.
+#### shallow (default)
+This method gets all the files under a specified `src` at once from specified `rev`.
+In almost all cases, it will be the best choice.
+
+If you omit `"mtd"` key, `"shallow"` method will be used automatically.
+
+
+#### shallow_no_sparse
+`"shallow"` gets all the files managed by that repository at once from specified `rev`,
+it inherently requires more memory and temporary storage than `"shallow"` and `"partial"`,
+but it must be faster than `"partial"` if there are many files to `sync`.  
+(It must not faster than `"shallow"`.)
+
+I assume that it is the alternative method when you face some problems by using `"shallow"`.
+
+#### partial (not recommended)
+`"partial"` gets all the files under a specified directory ONE BY ONE.
+Since it performs downloading for each file respectively (it is mere git command behavior),
+it could be significantly slow as the number of files grows.
 (In the worst case, you might get an error)
 
-If you `sync` only small number of files of hugely large repository, `"partial"` could be better choice,
-but, if it's not, `"shallow"` is more appropriate in many cases,
-though it varies depending on the target repository to sync.
-
+There is a faint chance that it might be sperior than `"shallow"` in terms of memory consumption.
+But basically it seems no motivation to use this method.
 
 Commands
 --------
@@ -97,12 +108,15 @@ https://github.com/msr1k/git-wire/blob/main/.gitwire
 
 ## Changelog
 
-- v1.2.0
+- v1.2.0 (2023/09/22)
 
-    Added sparse-checkout feature, it can be automatically used in `shallow` checkout method.
+    Added sparse-checkout feature into `"shallow"` checkout method.
     In almost all cases it is the best in terms of memory & time consumption.
 
-- v1.1.3
+    And previous `"shallow"` checkout method renamed as `"shallow_no_sparse"`,
+    it could be an alternative to `"shallow"` if you encount some problems with `"shallow"`.
+
+- v1.1.3 (2023/09/21)
 
     Fixed: if target repository placed somewhere including `.git`,
     `git wire check` wrongly ignores all the files in this repository,

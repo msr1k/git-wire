@@ -117,10 +117,8 @@ fn git_checkout_shallow_core(parsed: &Parsed, use_sparse: bool) -> Result<(), Ca
         if out.is_err() || !out.unwrap().status.success() {
             // sparse-checkout command is optional, even if it failed,
             // subsequent sequence will be performed without any problem.
-            println!("   - Could not activate sparse-checkout feature");
-            println!("   - Your git client might not support this feature.");
-        } else {
-            println!("   - sparse-checkout feature is enabled");
+            println!("    - Could not activate sparse-checkout feature");
+            println!("    - Your git client might not support this feature.");
         }
     }
 
