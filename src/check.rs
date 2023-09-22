@@ -30,9 +30,9 @@ pub fn check() -> Result<bool, Cause<ErrorType>> {
 fn compare_with_temp(parsed: &Parsed, root: &str, temp: &Path) -> Result<bool, Cause<ErrorType>> {
     println!("  - compare `src` and `dst`");
 
-    let temp_root = temp.clone();
-    let temp = temp.join(parsed.src.clone());
-    let root = Path::new(root).join(parsed.dst.clone());
+    let temp_root = temp;
+    let temp = temp.join(parsed.src.as_str());
+    let root = Path::new(root).join(parsed.dst.as_str());
 
     let fc1 = FolderCompare::new(&temp, &root, &vec![])
         .or_else(|e| Err(cause!(CheckDifferenceExecutionError(e))))?;
@@ -48,19 +48,19 @@ fn compare_with_temp(parsed: &Parsed, root: &str, temp: &Path) -> Result<bool, C
             let file = file.to_str()
                 .ok_or_else(|| cause!(CheckDifferenceStringReplaceError))?;
             let file = file.replace(temp_root, "");
-            println!("  ! file {:?} does not exist", file);
+            println!("    ! file {:?} does not exist", file);
         }
         result = false;
     }
     if fc2.new_files.len() > 0 {
         for file in fc2.new_files {
-            println!("  ! file {:?} does not exist on original", file);
+            println!("    ! file {:?} does not exist on original", file);
         }
         result = false;
     }
     if fc2.changed_files.len() > 0 {
         for file in fc2.changed_files {
-            println!("  ! file {:?} is not identical to original", file);
+            println!("    ! file {:?} is not identical to original", file);
         }
         result = false;
     }

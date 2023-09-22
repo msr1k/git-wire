@@ -26,12 +26,25 @@ pub enum ErrorType {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+pub enum Method {
+    #[serde(rename = "shallow")]
+    Shallow,
+
+    #[serde(rename = "shallow_no_sparse")]
+    ShallowNoSparse,
+
+    #[serde(rename = "partial")]
+    Partial,
+}
+
+
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Parsed {
     pub url: String,
     pub rev: String,
     pub src: String,
     pub dst: String,
-    pub mtd: Option<String>,
+    pub mtd: Option<Method>,
 }
 
 pub mod parse;

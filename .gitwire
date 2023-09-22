@@ -2,7 +2,14 @@
   {
     "url": "https://github.com/msr1k/git-wire.git",
     "rev": "v1.0.0",
-    "src": "src",
-    "dst": "src_v1.0.0"
+    "src": "src/common",
+    "dst": "src_common_v1.0.0"
+  },
+  {
+    "url": "https://github.com/msr1k/git-wire.git",
+    "rev": "v1.1.0",
+    "src": "src/common",
+    "dst": "src_common_v1.1.0",
+    "mtd": "shallow_no_sparse"
   }
 ]

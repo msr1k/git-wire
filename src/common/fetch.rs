@@ -1,4 +1,5 @@
 use std::process::Command;
+use std::borrow::Cow;
 
 use cause::Cause;
 use cause::cause;
@@ -9,6 +10,7 @@ use regex::Regex;
 use super::ErrorType;
 use super::ErrorType::*;
 use super::Parsed;
+use super::Method;
 
 pub fn fetch_target_to_tempdir(parsed: &Parsed)
     -> Result<TempDir, Cause<ErrorType>>
@@ -21,10 +23,13 @@ pub fn fetch_target_to_tempdir(parsed: &Parsed)
 
     git_clone(parsed)?;
 
-    let mut method: fn(&Parsed) -> Result<(), Cause<ErrorType>> = git_checkout_shallow;
-    if let Some(x) = parsed.mtd.as_ref() {
-        if x == "partial" { method = git_checkout_partial; }
-    }
+    let method = match parsed.mtd.as_ref() {
+        Some(Method::Partial) => git_checkout_partial,
+        Some(Method::ShallowNoSparse) => git_checkout_shallow_no_sparse,
+        Some(Method::Shallow) => git_checkout_shallow_with_sparse,
+        None => git_checkout_shallow_with_sparse,
+    };
+
     method(parsed)?;
 
     Ok(tempdir)
@@ -83,15 +88,50 @@ fn git_checkout_partial(parsed: &Parsed) -> Result<(), Cause<ErrorType>> {
     }
 }
 
-fn git_checkout_shallow(parsed: &Parsed) -> Result<(), Cause<ErrorType>> {
+fn git_checkout_shallow_no_sparse(parsed: &Parsed) -> Result<(), Cause<ErrorType>> {
+    git_checkout_shallow_core(parsed, false)
+}
+
+fn git_checkout_shallow_with_sparse(parsed: &Parsed) -> Result<(), Cause<ErrorType>> {
+    git_checkout_shallow_core(parsed, true)
+}
+
+fn git_checkout_shallow_core(parsed: &Parsed, use_sparse: bool) -> Result<(), Cause<ErrorType>> {
     let rev = identify_commit_hash(parsed)?;
+    let no_sparse = if use_sparse { "" } else { " (no sparse)" };
     let rev = if let Some(r) = rev {
-        println!("  - checkout shallow: {} ({})", r, parsed.rev);
+        println!("  - checkout shallow{}: {} ({})", no_sparse, r, parsed.rev);
         r
     } else {
-        println!("  - checkout shallow: {}", parsed.rev);
+        println!("  - checkout shallow{}: {}", no_sparse, parsed.rev);
         parsed.rev.to_owned()
     };
+
+    if use_sparse {
+
+        // Make a kind of absolute path from repository root for sparse checkout.
+        let sparse_path: Cow<'_, str> = if parsed.src.starts_with("/") {
+            parsed.src.as_str().into()
+        } else {
+            format!("/{}", &parsed.src).into()
+        };
+
+        let out = Command::new("git")
+            .args([
+                "sparse-checkout",
+                "set",
+                "--no-cone",
+                &sparse_path,
+            ])
+            .output();
+
+        if out.is_err() || !out.unwrap().status.success() {
+            // sparse-checkout command is optional, even if it failed,
+            // subsequent sequence will be performed without any problem.
+            println!("    - Could not activate sparse-checkout feature");
+            println!("    - Your git client might not support this feature.");
+        }
+    }
 
     let out = Command::new("git")
         .args([
@@ -125,6 +165,7 @@ fn git_checkout_shallow(parsed: &Parsed) -> Result<(), Cause<ErrorType>> {
             .unwrap_or("Could not get even a error output of git checkout command".into());
         Err(cause!(GitCheckoutCommandExitStatusError, error))
     }
+
 }
 
 fn identify_commit_hash(parsed: &Parsed) -> Result<Option<String>, Cause<ErrorType>> {
