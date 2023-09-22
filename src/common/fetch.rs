@@ -21,10 +21,13 @@ pub fn fetch_target_to_tempdir(parsed: &Parsed)
 
     git_clone(parsed)?;
 
-    let mut method: fn(&Parsed) -> Result<(), Cause<ErrorType>> = git_checkout_shallow;
-    if let Some(x) = parsed.mtd.as_ref() {
-        if x == "partial" { method = git_checkout_partial; }
-    }
+    let method = match parsed.mtd.as_ref().map(|e| e.as_str()) {
+        Some("partial") => git_checkout_partial,
+        Some("shallow_no_sparse") => git_checkout_shallow_no_sparse,
+        Some("shallow") => git_checkout_shallow_with_sparse,
+        _ => git_checkout_shallow_with_sparse,
+    };
+
     method(parsed)?;
 
     Ok(tempdir)
@@ -83,7 +86,15 @@ fn git_checkout_partial(parsed: &Parsed) -> Result<(), Cause<ErrorType>> {
     }
 }
 
-fn git_checkout_shallow(parsed: &Parsed) -> Result<(), Cause<ErrorType>> {
+fn git_checkout_shallow_no_sparse(parsed: &Parsed) -> Result<(), Cause<ErrorType>> {
+    git_checkout_shallow_core(parsed, false)
+}
+
+fn git_checkout_shallow_with_sparse(parsed: &Parsed) -> Result<(), Cause<ErrorType>> {
+    git_checkout_shallow_core(parsed, true)
+}
+
+fn git_checkout_shallow_core(parsed: &Parsed, use_sparse: bool) -> Result<(), Cause<ErrorType>> {
     let rev = identify_commit_hash(parsed)?;
     let rev = if let Some(r) = rev {
         println!("  - checkout shallow: {} ({})", r, parsed.rev);
@@ -92,6 +103,26 @@ fn git_checkout_shallow(parsed: &Parsed) -> Result<(), Cause<ErrorType>> {
         println!("  - checkout shallow: {}", parsed.rev);
         parsed.rev.to_owned()
     };
+
+    if use_sparse {
+        let out = Command::new("git")
+            .args([
+                "sparse-checkout",
+                "set",
+                &parsed.src,
+                rev.as_ref(),
+            ])
+            .output();
+
+        if out.is_err() || !out.unwrap().status.success() {
+            // sparse-checkout command is optional, even if it failed,
+            // subsequent sequence will be performed without any problem.
+            println!("   - Could not activate sparse-checkout feature");
+            println!("   - Your git client might not support this feature.");
+        } else {
+            println!("   - sparse-checkout feature is enabled");
+        }
+    }
 
     let out = Command::new("git")
         .args([
