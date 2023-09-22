@@ -116,6 +116,8 @@ https://github.com/msr1k/git-wire/blob/main/.gitwire
     And previous `"shallow"` checkout method renamed as `"shallow_no_sparse"`,
     it could be an alternative to `"shallow"` if you encount some problems with `"shallow"`.
 
+    In addition, several tiny improvements have been done.
+
 - v1.1.3 (2023/09/21)
 
     Fixed: if target repository placed somewhere including `.git`,
