@@ -1,4 +1,5 @@
 use std::process::Command;
+use std::borrow::Cow;
 
 use cause::Cause;
 use cause::cause;
@@ -105,12 +106,20 @@ fn git_checkout_shallow_core(parsed: &Parsed, use_sparse: bool) -> Result<(), Ca
     };
 
     if use_sparse {
+
+        // Make a kind of absolute path from repository root for sparse checkout.
+        let sparse_path: Cow<'_, str> = if parsed.src.starts_with("/") {
+            parsed.src.as_str().into()
+        } else {
+            format!("/{}", &parsed.src).into()
+        };
+
         let out = Command::new("git")
             .args([
                 "sparse-checkout",
                 "set",
-                &parsed.src,
-                rev.as_ref(),
+                "--no-cone",
+                &sparse_path,
             ])
             .output();
 
@@ -154,6 +163,7 @@ fn git_checkout_shallow_core(parsed: &Parsed, use_sparse: bool) -> Result<(), Ca
             .unwrap_or("Could not get even a error output of git checkout command".into());
         Err(cause!(GitCheckoutCommandExitStatusError, error))
     }
+
 }
 
 fn identify_commit_hash(parsed: &Parsed) -> Result<Option<String>, Cause<ErrorType>> {
