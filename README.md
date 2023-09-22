@@ -83,7 +83,7 @@ Please note that it always clears the destination before sync started for each i
 
 Check sources depending on the definition of the `.gitwire`.
 
-If there are some differences, this command repots each of them all,
+If there are some differences, this command reports each of them all,
 and returns with exit code 1, otherwise returns with 0.
 
     $ git wire check
@@ -96,6 +96,11 @@ This `.gitwire` sample wires this repository's `src` at revision v1.0.0 into `sr
 https://github.com/msr1k/git-wire/blob/main/.gitwire
 
 ## Changelog
+
+- v1.2.0
+
+    Added sparse-checkout feature, it can be automatically used in `shallow` checkout method.
+    In almost all cases it is the best in terms of memory & time consumption.
 
 - v1.1.3
 
