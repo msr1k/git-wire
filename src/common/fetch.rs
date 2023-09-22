@@ -97,11 +97,12 @@ fn git_checkout_shallow_with_sparse(parsed: &Parsed) -> Result<(), Cause<ErrorTy
 
 fn git_checkout_shallow_core(parsed: &Parsed, use_sparse: bool) -> Result<(), Cause<ErrorType>> {
     let rev = identify_commit_hash(parsed)?;
+    let no_sparse = if use_sparse { "" } else { " (no sparse)" };
     let rev = if let Some(r) = rev {
-        println!("  - checkout shallow: {} ({})", r, parsed.rev);
+        println!("  - checkout shallow{}: {} ({})", no_sparse, r, parsed.rev);
         r
     } else {
-        println!("  - checkout shallow: {}", parsed.rev);
+        println!("  - checkout shallow{}: {}", no_sparse, parsed.rev);
         parsed.rev.to_owned()
     };
 

@@ -9,6 +9,7 @@
     "url": "https://github.com/msr1k/git-wire.git",
     "rev": "v1.1.0",
     "src": "src/common",
-    "dst": "src_common_v1.1.0"
+    "dst": "src_common_v1.1.0",
+    "mtd": "shallow_no_sparse"
   }
 ]
