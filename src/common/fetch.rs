@@ -10,6 +10,7 @@ use regex::Regex;
 use super::ErrorType;
 use super::ErrorType::*;
 use super::Parsed;
+use super::Method;
 
 pub fn fetch_target_to_tempdir(parsed: &Parsed)
     -> Result<TempDir, Cause<ErrorType>>
@@ -22,11 +23,11 @@ pub fn fetch_target_to_tempdir(parsed: &Parsed)
 
     git_clone(parsed)?;
 
-    let method = match parsed.mtd.as_ref().map(|e| e.as_str()) {
-        Some("partial") => git_checkout_partial,
-        Some("shallow_no_sparse") => git_checkout_shallow_no_sparse,
-        Some("shallow") => git_checkout_shallow_with_sparse,
-        _ => git_checkout_shallow_with_sparse,
+    let method = match parsed.mtd.as_ref() {
+        Some(Method::Partial) => git_checkout_partial,
+        Some(Method::ShallowNoSparse) => git_checkout_shallow_no_sparse,
+        Some(Method::Shallow) => git_checkout_shallow_with_sparse,
+        None => git_checkout_shallow_with_sparse,
     };
 
     method(parsed)?;
