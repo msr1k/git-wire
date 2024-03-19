@@ -1,38 +1,31 @@
 use std::process::exit;
-use clap::Command;
+use clap::{Parser, Subcommand};
 
 mod sync;
 mod check;
 mod common;
 
+#[derive(Parser)]
+#[command(version, author, about, long_about = None)]
+struct Cli {
+    #[command(subcommand)]
+    command: Command
+}
+
+#[derive(Subcommand)]
+enum Command {
+    /// Synchronizes code depending on a file '.gitwire' definition.
+    Sync,
+    /// Checks if the synchronized code identical to the original.
+    Check,
+}
+
 fn main() {
-    let app = Command::new(clap::crate_name!())
-        .version(clap::crate_version!())
-        .author(clap::crate_authors!())
-        .about(clap::crate_description!())
-        .arg_required_else_help(true)
-        .subcommand_required(true);
+    let cli = Cli::parse();
 
-    let app = app.subcommand(
-        Command::new("sync")
-            .about("Synchronizes code depending on a file '.gitwire' definition.")
-            // .arg_from_usage("-v, --verbose 'Verbosely output the command result.'")
-    );
-
-    let app = app.subcommand(
-        Command::new("check")
-            .about("Checks if the synchronized code identical to the original.")
-            // .arg_from_usage("-v, --verbose 'Verbosely output the command result.'")
-    );
-
-    let matches = app.get_matches();
-
-    let result = match matches.subcommand() {
-        Some(("sync", _)) => sync::sync(),
-        Some(("check", _)) => check::check(),
-        _ => {
-            std::process::exit(1);
-        }
+    let result = match &cli.command {
+        Command::Sync => sync::sync(),
+        Command::Check => check::check(),
     };
 
     match result.as_ref() {
@@ -45,4 +38,10 @@ fn main() {
         Ok(true) => exit(0),
         _ => exit(1),
     }
+}
+
+#[test]
+fn verify_cli() {
+    use clap::CommandFactory;
+    Cli::command().debug_assert()
 }

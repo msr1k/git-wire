@@ -108,6 +108,10 @@ https://github.com/msr1k/git-wire/blob/main/.gitwire
 
 ## Changelog
 
+- v1.2.1 (2024/03/19)
+
+    Updated dependent crates, no functional changes included.
+
 - v1.2.0 (2023/09/22)
 
     Added sparse-checkout feature into `"shallow"` checkout method.
