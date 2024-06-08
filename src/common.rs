@@ -8,6 +8,7 @@ pub enum ErrorType {
     DotGitWireFileOpenError,
     DotGitWireFileParseError,
     DotGitWireFileSoundnessError,
+    DotGitWireFileNameNotUniqueError,
     TempDirCreationError,
     GitCloneCommandError,
     GitCloneCommandExitStatusError,
@@ -17,6 +18,7 @@ pub enum ErrorType {
     GitFetchCommandError,
     GitFetchCommandExitStatusError,
     MoveFromTempToDestError,
+    NoItemToOperateError,
     CheckDifferenceExecutionError(Error),
     CheckDifferenceStringReplaceError,
     GitLsRemoteCommandError,
@@ -40,6 +42,8 @@ pub enum Method {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Parsed {
+    pub name: Option<String>,
+    pub dsc: Option<String>,
     pub url: String,
     pub rev: String,
     pub src: String,
@@ -49,4 +53,4 @@ pub struct Parsed {
 
 pub mod parse;
 pub mod fetch;
-
+pub mod sequence;

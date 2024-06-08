@@ -15,17 +15,23 @@ struct Cli {
 #[derive(Subcommand)]
 enum Command {
     /// Synchronizes code depending on a file '.gitwire' definition.
-    Sync,
+    Sync {
+        #[arg(short, long)]
+        name: Option<String>,
+    },
     /// Checks if the synchronized code identical to the original.
-    Check,
+    Check{
+        #[arg(short, long)]
+        name: Option<String>,
+    },
 }
 
 fn main() {
     let cli = Cli::parse();
 
-    let result = match &cli.command {
-        Command::Sync => sync::sync(),
-        Command::Check => check::check(),
+    let result = match cli.command {
+        Command::Sync{ name } => sync::sync(name),
+        Command::Check{ name } => check::check(name),
     };
 
     match result.as_ref() {

@@ -38,6 +38,41 @@ Create a file named `.gitwire` at the root of the repository with following JSON
 ]
 ```
 
+### name: Optional key to identify the item
+Optionally, you can define `"name"` which is the key to identify the item.
+
+It can be used to narrow down the scope of the command into particular item.
+
+```json
+[
+  {
+    "name": "any string can be a name, it must be unique within a .gitwire file",
+    "url": "url-of-the-repository",
+    "rev": "revision (commit hash or branch name or tag name)",
+    "src": "source directory of the target repository",
+    "dst": "directory where to put the `src` on this repositry"
+  },
+  ...
+]
+```
+
+### dsc: Optional key to describe the item
+Optionally, you can also define `"dsc"` to describe the item.
+
+```json
+[
+  {
+    "dsc": "a description of the item can be written here if you want",
+    "url": "url-of-the-repository",
+    "rev": "revision (commit hash or branch name or tag name)",
+    "src": "source directory of the target repository",
+    "dst": "directory where to put the `src` on this repositry"
+  },
+  ...
+]
+```
+
+### mtd: Optional key to specify checkout method
 Optionally, you can select a method, `"shallow"`, `"shallow_no_sparse"`, and `"partial"` to checkout src like below.
 
 ```json
@@ -99,14 +134,27 @@ and returns with exit code 1, otherwise returns with 0.
 
     $ git wire check
 
+### ``--name`: Option for both sync and check
+
+`-n <name>` or `--name <name>` can be added for both command sync and check.
+
+When you add this option, command will be executed only for an item that has specified id.
 
 A sample .gitwire
 -----------------
 
-This `.gitwire` sample wires this repository's `src` at revision v1.0.0 into `src_v1.0.0` directory.
+This `.gitwire` sample wires this repository's `src/common`
+at revision v1.0.0 and v1.1.0 into `src_common_v1.0.0`, `src_common_v1.1.0` directory respectively.
 https://github.com/msr1k/git-wire/blob/main/.gitwire
 
 ## Changelog
+
+- v1.3.0 (2024/06/08)
+
+    Added optional `name` and `dsc` key to the .gitwire json object.
+
+    - `name` can be used to narrow down the scope of the commands.
+    - `dsc` can be used to describe the item
 
 - v1.2.1 (2024/03/19)
 

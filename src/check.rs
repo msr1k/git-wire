@@ -9,20 +9,18 @@ use crate::common::Parsed;
 use crate::common::ErrorType;
 use crate::common::ErrorType::*;
 
-pub fn check() -> Result<bool, Cause<ErrorType>> {
+pub fn check(name: Option<String>) -> Result<bool, Cause<ErrorType>> {
     println!("git-wire check started\n");
-    let (rootdir, parsed) = common::parse::parse_gitwire()?;
-
-    let len = parsed.len();
-    let mut result = true;
-    for (i, parsed) in parsed.iter().enumerate() {
-        println!(">> {}/{} started", i + 1, len);
-        let tempdir = common::fetch::fetch_target_to_tempdir(&parsed)?;
-        let no_diff = compare_with_temp(&parsed, &rootdir, tempdir.path())?;
-        if result && !no_diff {
-            result = false;
+    let result = common::sequence::sequence(
+        name,
+        |parsed, rootdir, tempdir| {
+            Ok(compare_with_temp(
+                parsed,
+                rootdir,
+                tempdir.path(),
+            )?)
         }
-    }
+    )?;
     println!(">> All check tasks have done!\n");
     Ok(result)
 }
