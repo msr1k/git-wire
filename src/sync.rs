@@ -10,9 +10,13 @@ use crate::common::Parsed;
 use crate::common::ErrorType;
 use crate::common::ErrorType::*;
 
-pub fn sync() -> Result<bool, Cause<ErrorType>> {
+pub fn sync(id: Option<String>) -> Result<bool, Cause<ErrorType>> {
     println!("git-wire sync started\n");
     let (rootdir, parsed) = common::parse::parse_gitwire()?;
+
+    let parsed: Vec<_> = parsed.into_iter()
+        .filter(|p| p.id.is_some() && p.id == id)
+        .collect();
 
     let len = parsed.len();
     for (i, parsed) in parsed.iter().enumerate() {

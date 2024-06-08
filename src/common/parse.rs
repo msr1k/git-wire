@@ -44,10 +44,18 @@ fn parse_dotgitwire_file(file: String) -> Result<Vec<Parsed>, Cause<ErrorType>> 
         .or_else(|e| Err(cause!(DotGitWireFileParseError, ".gitwire file format is wrong").src(e)))?;
 
     if parsed.iter().any(|item| !check_parsed_item_soundness(item)) {
-        Err(cause!(DotGitWireFileSoundnessError, ".gitwire file's `src` and `dst` must not include '.', '..', and '.git'."))
-    } else {
-        Ok(parsed)
+        Err(cause!(DotGitWireFileSoundnessError, ".gitwire file's `src` and `dst` must not include '.', '..', and '.git'."))?
     }
+
+    let deduplicated_count = parsed.iter()
+        .filter_map(|p| p.id.as_ref().map(|id| id.as_str()))
+        .collect::<std::collections::HashSet<&str>>().iter()
+        .count();
+    if parsed.iter().filter(|p| p.id.is_some()).count() != deduplicated_count {
+        Err(cause!(DotGitWireFileIdNotUniqueError, ".gitwire file's `id`s must be differ each other."))?
+    }
+
+    Ok(parsed)
 }
 
 fn remove_line_ending(string: String) -> String {
