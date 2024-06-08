@@ -18,6 +18,7 @@ pub enum ErrorType {
     GitFetchCommandError,
     GitFetchCommandExitStatusError,
     MoveFromTempToDestError,
+    NoItemToOperateError,
     CheckDifferenceExecutionError(Error),
     CheckDifferenceStringReplaceError,
     GitLsRemoteCommandError,

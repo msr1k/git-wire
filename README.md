@@ -38,6 +38,25 @@ Create a file named `.gitwire` at the root of the repository with following JSON
 ]
 ```
 
+### id: Optional key to identify the item
+Optionally, you can define `"id"` which is the key to identify the item.
+
+It can be used to narrow down the scope of the command into particular item.
+
+```json
+[
+  {
+    "id": "any string can be a id, it must be unique within a .gitwire file",
+    "url": "url-of-the-repository",
+    "rev": "revision (commit hash or branch name or tag name)",
+    "src": "source directory of the target repository",
+    "dst": "directory where to put the `src` on this repositry"
+  },
+  ...
+]
+```
+
+### mtd: Optional key to specify checkout method
 Optionally, you can select a method, `"shallow"`, `"shallow_no_sparse"`, and `"partial"` to checkout src like below.
 
 ```json
@@ -99,6 +118,11 @@ and returns with exit code 1, otherwise returns with 0.
 
     $ git wire check
 
+### ``--id`: Option for both sync and check
+
+`-i <id>` or `--id <id>` can be added for both command sync and check.
+
+When you add this option, command will be executed only for an item that has specified id.
 
 A sample .gitwire
 -----------------
@@ -107,6 +131,11 @@ This `.gitwire` sample wires this repository's `src` at revision v1.0.0 into `sr
 https://github.com/msr1k/git-wire/blob/main/.gitwire
 
 ## Changelog
+
+- v1.3.0 (2024/06/08)
+
+    Added optional id key to the .gitwire json object.
+    It can be used to narrow down the scope of the commands.
 
 - v1.2.1 (2024/03/19)
 

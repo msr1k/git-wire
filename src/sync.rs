@@ -19,8 +19,16 @@ pub fn sync(id: Option<String>) -> Result<bool, Cause<ErrorType>> {
         .collect();
 
     let len = parsed.len();
+    if len == 0 {
+        Err(cause!(NoItemToOperateError, "There are no items to operate."))?
+    }
+
     for (i, parsed) in parsed.iter().enumerate() {
-        println!(">> {}/{} started", i + 1, len);
+        let id_str = match parsed.id {
+            Some(ref id) => format!(" ({})", id.as_str()),
+            None => "".to_owned(),
+        };
+        println!(">> {}/{} started {}", i + 1, len, id_str);
         let tempdir = common::fetch::fetch_target_to_tempdir(&parsed)?;
         move_from_temp(&parsed, &rootdir, tempdir.path())?;
     }
