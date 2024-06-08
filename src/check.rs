@@ -9,32 +9,18 @@ use crate::common::Parsed;
 use crate::common::ErrorType;
 use crate::common::ErrorType::*;
 
-pub fn check(id: Option<String>) -> Result<bool, Cause<ErrorType>> {
+pub fn check(name: Option<String>) -> Result<bool, Cause<ErrorType>> {
     println!("git-wire check started\n");
-    let (rootdir, parsed) = common::parse::parse_gitwire()?;
-
-    let parsed: Vec<_> = parsed.into_iter()
-        .filter(|p| p.id.is_some() && p.id == id)
-        .collect();
-
-    let len = parsed.len();
-    if len == 0 {
-        Err(cause!(NoItemToOperateError, "There are no items to operate."))?
-    }
-
-    let mut result = true;
-    for (i, parsed) in parsed.iter().enumerate() {
-        let id_str = match parsed.id {
-            Some(ref id) => format!(" ({})", id.as_str()),
-            None => "".to_owned(),
-        };
-        println!(">> {}/{} started{}", i + 1, len, id_str);
-        let tempdir = common::fetch::fetch_target_to_tempdir(&parsed)?;
-        let no_diff = compare_with_temp(&parsed, &rootdir, tempdir.path())?;
-        if result && !no_diff {
-            result = false;
+    let result = common::sequence::sequence(
+        name,
+        |parsed, rootdir, tempdir| {
+            Ok(compare_with_temp(
+                parsed,
+                rootdir,
+                tempdir.path(),
+            )?)
         }
-    }
+    )?;
     println!(">> All check tasks have done!\n");
     Ok(result)
 }

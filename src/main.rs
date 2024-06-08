@@ -17,12 +17,12 @@ enum Command {
     /// Synchronizes code depending on a file '.gitwire' definition.
     Sync {
         #[arg(short, long)]
-        id: Option<String>,
+        name: Option<String>,
     },
     /// Checks if the synchronized code identical to the original.
     Check{
         #[arg(short, long)]
-        id: Option<String>,
+        name: Option<String>,
     },
 }
 
@@ -30,8 +30,8 @@ fn main() {
     let cli = Cli::parse();
 
     let result = match cli.command {
-        Command::Sync{ id } => sync::sync(id),
-        Command::Check{ id } => check::check(id),
+        Command::Sync{ name } => sync::sync(name),
+        Command::Check{ name } => check::check(name),
     };
 
     match result.as_ref() {
