@@ -16,11 +16,13 @@ struct Cli {
 enum Command {
     /// Synchronizes code depending on a file '.gitwire' definition.
     Sync {
+        /// Narrow down the scope of the sync command targets by its name
         #[arg(short, long)]
         name: Option<String>,
     },
     /// Checks if the synchronized code identical to the original.
     Check{
+        /// Narrow down the scope of the check command targets by its name
         #[arg(short, long)]
         name: Option<String>,
     },
