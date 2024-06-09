@@ -40,6 +40,7 @@ pub fn sequence(
         if !success {
             result = false;
         }
+        println!("");
     }
     Ok(result)
 }

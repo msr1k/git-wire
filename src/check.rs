@@ -39,6 +39,8 @@ fn compare_with_temp(parsed: &Parsed, root: &str, temp: &Path) -> Result<bool, C
 
     let mut result = true;
 
+    use colored::*;
+
     if fc1.new_files.len() > 0 {
         let temp_root = temp_root.to_str()
             .ok_or_else(|| cause!(CheckDifferenceStringReplaceError))?;
@@ -46,19 +48,19 @@ fn compare_with_temp(parsed: &Parsed, root: &str, temp: &Path) -> Result<bool, C
             let file = file.to_str()
                 .ok_or_else(|| cause!(CheckDifferenceStringReplaceError))?;
             let file = file.replace(temp_root, "");
-            println!("    ! file {:?} does not exist", file);
+            println!("{}", format!("    ! file {:?} does not exist", file).red());
         }
         result = false;
     }
     if fc2.new_files.len() > 0 {
         for file in fc2.new_files {
-            println!("    ! file {:?} does not exist on original", file);
+            println!("{}", format!("    ! file {:?} does not exist on original", file).red());
         }
         result = false;
     }
     if fc2.changed_files.len() > 0 {
         for file in fc2.changed_files {
-            println!("    ! file {:?} is not identical to original", file);
+            println!("{}", format!("    ! file {:?} is not identical to original", file).red());
         }
         result = false;
     }

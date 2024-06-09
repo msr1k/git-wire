@@ -36,10 +36,12 @@ fn main() {
         Command::Check{ name } => check::check(name),
     };
 
+    use colored::*;
+
     match result.as_ref() {
-        Ok(true) => println!("Success"),
-        Ok(false) => println!("Failure"),
-        Err(e) => eprintln!("{}", e),
+        Ok(true) => println!("{}", "Success".green().bold()),
+        Ok(false) => println!("{}", "Failure".red().bold()),
+        Err(e) => eprintln!("{}", e.to_string().red().bold()),
     }
 
     match result {

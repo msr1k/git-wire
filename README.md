@@ -152,7 +152,8 @@ https://github.com/msr1k/git-wire/blob/main/.gitwire
 
 - v1.3.1 (2024/06/09)
 
-    - Enhanced documents a little.
+    - Some document and output enahancements. (README, `--help` and console output format)
+    - Color output support.
 
 - v1.3.0 (2024/06/08)
 
