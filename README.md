@@ -11,10 +11,10 @@ Instration
 - If your environment have rust installed:
 
     ```
-    $ cargo install --git https://github.com/msr1k/git-wire.git
+    $ cargo install git-wire
     ```
 
-    Or, you can build from source if you clone this repository.
+    Or you can build from source if you clone [this repository](https://github.com/msr1k/git-wire).
 
 - In other cases:
 
@@ -145,9 +145,15 @@ A sample .gitwire
 
 This `.gitwire` sample wires this repository's `src/common`
 at revision v1.0.0 and v1.1.0 into `src_common_v1.0.0`, `src_common_v1.1.0` directory respectively.
+
 https://github.com/msr1k/git-wire/blob/main/.gitwire
 
 ## Changelog
+
+- v1.3.1 (2024/06/09)
+
+    - Some document and output enahancements. (README, `--help` and console output format)
+    - Color output support.
 
 - v1.3.0 (2024/06/08)
 
@@ -178,7 +184,7 @@ https://github.com/msr1k/git-wire/blob/main/.gitwire
 
 - v1.1.2
 
-    Update all dependent crate's versions.
+    Update all dependent crate's versions.  
     Fix a typo.
 
 - v1.1.1

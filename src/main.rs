@@ -16,11 +16,13 @@ struct Cli {
 enum Command {
     /// Synchronizes code depending on a file '.gitwire' definition.
     Sync {
+        /// Narrow down the scope of the sync command targets by its name
         #[arg(short, long)]
         name: Option<String>,
     },
     /// Checks if the synchronized code identical to the original.
     Check{
+        /// Narrow down the scope of the check command targets by its name
         #[arg(short, long)]
         name: Option<String>,
     },
@@ -34,10 +36,12 @@ fn main() {
         Command::Check{ name } => check::check(name),
     };
 
+    use colored::*;
+
     match result.as_ref() {
-        Ok(true) => println!("Success"),
-        Ok(false) => println!("Failure"),
-        Err(e) => eprintln!("{}", e),
+        Ok(true) => println!("{}", "Success".green().bold()),
+        Ok(false) => println!("{}", "Failure".red().bold()),
+        Err(e) => eprintln!("{}", e.to_string().red().bold()),
     }
 
     match result {
