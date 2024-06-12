@@ -26,6 +26,16 @@ pub fn sequence(
         Err(cause!(NoItemToOperateError, "There are no items to operate."))?
     }
 
+    serialized(parsed, rootdir, func)
+}
+
+fn serialized(
+    parsed: Vec<Parsed>,
+    rootdir: String,
+    func: impl Fn(&Parsed, &String, &TempDir) -> Result<bool, Cause<ErrorType>>,
+) -> Result<bool, Cause<ErrorType>> {
+    let len = parsed.len();
+
     let mut result = true;
     for (i, parsed) in parsed.iter().enumerate() {
         let name_str = match (&parsed.name, &parsed.dsc) {
