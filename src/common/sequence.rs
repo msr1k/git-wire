@@ -54,3 +54,14 @@ fn serialized(
     }
     Ok(result)
 }
+
+#[allow(dead_code)]
+fn parallel(
+    parsed: Vec<Parsed>,
+    rootdir: String,
+    func: impl Fn(&Parsed, &String, &TempDir) -> Result<bool, Cause<ErrorType>>,
+) -> Result<bool, Cause<ErrorType>> {
+    // Want to use some progress bar like library, e.g. following. 
+    // https://github.com/console-rs/indicatif/blob/main/examples/yarnish.rs
+    todo!()
+}
