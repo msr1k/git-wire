@@ -10,28 +10,31 @@ use crate::common::Parsed;
 use crate::common::ErrorType;
 use crate::common::ErrorType::*;
 
-pub fn sync(name: Option<String>) -> Result<bool, Cause<ErrorType>> {
+pub fn sync(name: Option<String>, mode: common::sequence::Mode) -> Result<bool, Cause<ErrorType>> {
     println!("git-wire sync started\n");
     common::sequence::sequence(
         name,
-        |parsed, rootdir, tempdir| {
+        |prefix, parsed, rootdir, tempdir| {
             Ok(move_from_temp(
+                prefix,
                 parsed,
                 rootdir,
                 tempdir.path(),
             ).map(|_| true)?)
-        }
+        },
+        mode,
     )?;
     println!(">> All sync tasks have done!\n");
     Ok(true)
 }
 
 fn move_from_temp(
+    prefix: &str,
     parsed: &Parsed,
     root: &str,
     temp: &Path,
 ) -> Result<(), Cause<ErrorType>> {
-    println!("  - copy from `src` to `dst`");
+    println!("  - {prefix}copy from `src` to `dst`");
 
     let from = temp.join(parsed.src.as_str());
     let to = PathBuf::from(root).join(parsed.dst.as_str());

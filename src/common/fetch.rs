@@ -12,7 +12,7 @@ use super::ErrorType::*;
 use super::Parsed;
 use super::Method;
 
-pub fn fetch_target_to_tempdir(parsed: &Parsed)
+pub fn fetch_target_to_tempdir(prefix: &str, parsed: &Parsed)
     -> Result<TempDir, Cause<ErrorType>>
 {
     let tempdir = TempDir::new()
@@ -21,7 +21,7 @@ pub fn fetch_target_to_tempdir(parsed: &Parsed)
     std::env::set_current_dir(tempdir.path())
         .or_else(|e| Err(cause!(GitCheckoutChangeDirectoryError).src(e)))?;
 
-    git_clone(parsed)?;
+    git_clone(prefix, parsed)?;
 
     let method = match parsed.mtd.as_ref() {
         Some(Method::Partial) => git_checkout_partial,
@@ -30,13 +30,13 @@ pub fn fetch_target_to_tempdir(parsed: &Parsed)
         None => git_checkout_shallow_with_sparse,
     };
 
-    method(parsed)?;
+    method(prefix, parsed)?;
 
     Ok(tempdir)
 }
 
-fn git_clone(parsed: &Parsed) -> Result<(), Cause<ErrorType>> {
-    println!("  - clone --no-checkout: {}", parsed.url);
+fn git_clone(prefix: &str, parsed: &Parsed) -> Result<(), Cause<ErrorType>> {
+    println!("  - {prefix}clone --no-checkout: {}", parsed.url);
 
     let out = Command::new("git")
         .args([
@@ -59,13 +59,13 @@ fn git_clone(parsed: &Parsed) -> Result<(), Cause<ErrorType>> {
     }
 }
 
-fn git_checkout_partial(parsed: &Parsed) -> Result<(), Cause<ErrorType>> {
+fn git_checkout_partial(prefix: &str, parsed: &Parsed) -> Result<(), Cause<ErrorType>> {
     let rev = identify_commit_hash(parsed)?;
     let rev = if let Some(r) = rev {
-        println!("  - checkout partial: {} ({})", r, parsed.rev);
+        println!("  - {prefix}checkout partial: {} ({})", r, parsed.rev);
         r
     } else {
-        println!("  - checkout partial: {}", parsed.rev);
+        println!("  - {prefix}checkout partial: {}", parsed.rev);
         parsed.rev.to_owned()
     };
 
@@ -88,22 +88,22 @@ fn git_checkout_partial(parsed: &Parsed) -> Result<(), Cause<ErrorType>> {
     }
 }
 
-fn git_checkout_shallow_no_sparse(parsed: &Parsed) -> Result<(), Cause<ErrorType>> {
-    git_checkout_shallow_core(parsed, false)
+fn git_checkout_shallow_no_sparse(prefix: &str, parsed: &Parsed) -> Result<(), Cause<ErrorType>> {
+    git_checkout_shallow_core(prefix, parsed, false)
 }
 
-fn git_checkout_shallow_with_sparse(parsed: &Parsed) -> Result<(), Cause<ErrorType>> {
-    git_checkout_shallow_core(parsed, true)
+fn git_checkout_shallow_with_sparse(prefix: &str, parsed: &Parsed) -> Result<(), Cause<ErrorType>> {
+    git_checkout_shallow_core(prefix, parsed, true)
 }
 
-fn git_checkout_shallow_core(parsed: &Parsed, use_sparse: bool) -> Result<(), Cause<ErrorType>> {
+fn git_checkout_shallow_core(prefix: &str, parsed: &Parsed, use_sparse: bool) -> Result<(), Cause<ErrorType>> {
     let rev = identify_commit_hash(parsed)?;
     let no_sparse = if use_sparse { "" } else { " (no sparse)" };
     let rev = if let Some(r) = rev {
-        println!("  - checkout shallow{}: {} ({})", no_sparse, r, parsed.rev);
+        println!("  - {prefix}checkout shallow{}: {} ({})", no_sparse, r, parsed.rev);
         r
     } else {
-        println!("  - checkout shallow{}: {}", no_sparse, parsed.rev);
+        println!("  - {prefix}checkout shallow{}: {}", no_sparse, parsed.rev);
         parsed.rev.to_owned()
     };
 
@@ -128,8 +128,8 @@ fn git_checkout_shallow_core(parsed: &Parsed, use_sparse: bool) -> Result<(), Ca
         if out.is_err() || !out.unwrap().status.success() {
             // sparse-checkout command is optional, even if it failed,
             // subsequent sequence will be performed without any problem.
-            println!("    - Could not activate sparse-checkout feature");
-            println!("    - Your git client might not support this feature.");
+            println!("    - {prefix}Could not activate sparse-checkout feature.");
+            println!("    - {prefix}Your git client might not support this feature.");
         }
     }
 

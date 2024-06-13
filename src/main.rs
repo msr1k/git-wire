@@ -32,8 +32,8 @@ fn main() {
     let cli = Cli::parse();
 
     let result = match cli.command {
-        Command::Sync{ name } => sync::sync(name),
-        Command::Check{ name } => check::check(name),
+        Command::Sync{ name } => sync::sync(name, common::sequence::Mode::Parallel),
+        Command::Check{ name } => check::check(name, common::sequence::Mode::Parallel),
     };
 
     use colored::*;

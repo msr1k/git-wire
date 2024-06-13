@@ -9,24 +9,26 @@ use crate::common::Parsed;
 use crate::common::ErrorType;
 use crate::common::ErrorType::*;
 
-pub fn check(name: Option<String>) -> Result<bool, Cause<ErrorType>> {
+pub fn check(name: Option<String>, mode: common::sequence::Mode) -> Result<bool, Cause<ErrorType>> {
     println!("git-wire check started\n");
     let result = common::sequence::sequence(
         name,
-        |parsed, rootdir, tempdir| {
+        |prefix: &str, parsed, rootdir, tempdir| {
             Ok(compare_with_temp(
+                prefix,
                 parsed,
                 rootdir,
                 tempdir.path(),
             )?)
-        }
+        },
+        mode,
     )?;
     println!(">> All check tasks have done!\n");
     Ok(result)
 }
 
-fn compare_with_temp(parsed: &Parsed, root: &str, temp: &Path) -> Result<bool, Cause<ErrorType>> {
-    println!("  - compare `src` and `dst`");
+fn compare_with_temp(prefix: &str, parsed: &Parsed, root: &str, temp: &Path) -> Result<bool, Cause<ErrorType>> {
+    println!("  - {prefix}compare `src` and `dst`");
 
     let temp_root = temp;
     let temp = temp.join(parsed.src.as_str());
@@ -48,19 +50,19 @@ fn compare_with_temp(parsed: &Parsed, root: &str, temp: &Path) -> Result<bool, C
             let file = file.to_str()
                 .ok_or_else(|| cause!(CheckDifferenceStringReplaceError))?;
             let file = file.replace(temp_root, "");
-            println!("{}", format!("    ! file {:?} does not exist", file).red());
+            println!("{}", format!("    {prefix}! file {:?} does not exist", file).red());
         }
         result = false;
     }
     if fc2.new_files.len() > 0 {
         for file in fc2.new_files {
-            println!("{}", format!("    ! file {:?} does not exist on original", file).red());
+            println!("{}", format!("    {prefix}! file {:?} does not exist on original", file).red());
         }
         result = false;
     }
     if fc2.changed_files.len() > 0 {
         for file in fc2.changed_files {
-            println!("{}", format!("    ! file {:?} is not identical to original", file).red());
+            println!("{}", format!("    {prefix}! file {:?} is not identical to original", file).red());
         }
         result = false;
     }
