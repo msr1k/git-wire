@@ -1,26 +1,44 @@
 use std::path::Path;
+use std::sync::Arc;
 
 use cause::Cause;
 use cause::cause;
 use folder_compare::FolderCompare;
+use temp_dir::TempDir;
 
 use crate::common;
 use crate::common::Parsed;
 use crate::common::ErrorType;
 use crate::common::ErrorType::*;
+use crate::common::sequence::Operation;
+
+#[derive(Debug)]
+struct CheckOperation {}
+
+impl Operation for CheckOperation {
+    fn operate(
+        &self,
+        prefix: &str,
+        parsed: &Parsed,
+        rootdir: &String,
+        tempdir: &TempDir,
+    ) -> Result<bool, Cause<ErrorType>> {
+        compare_with_temp(
+            prefix,
+            parsed,
+            rootdir,
+            tempdir.path(),
+        )
+    }
+}
+
 
 pub fn check(name: Option<String>, mode: common::sequence::Mode) -> Result<bool, Cause<ErrorType>> {
     println!("git-wire check started\n");
+    let operation = Arc::new(CheckOperation {});
     let result = common::sequence::sequence(
         name,
-        |prefix: &str, parsed, rootdir, tempdir| {
-            Ok(compare_with_temp(
-                prefix,
-                parsed,
-                rootdir,
-                tempdir.path(),
-            )?)
-        },
+        operation,
         mode,
     )?;
     println!(">> All check tasks have done!\n");

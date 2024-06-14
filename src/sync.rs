@@ -1,27 +1,44 @@
 use std::path::Path;
 use std::path::PathBuf;
+use std::sync::Arc;
 
 use crate::common;
 use cause::Cause;
 use cause::cause;
 use fs_extra;
+use temp_dir::TempDir;
 
 use crate::common::Parsed;
 use crate::common::ErrorType;
 use crate::common::ErrorType::*;
+use crate::common::sequence::Operation;
+
+struct SyncOperation {}
+
+impl Operation for SyncOperation {
+    fn operate(
+        &self,
+        prefix: &str,
+        parsed: &Parsed,
+        rootdir: &String,
+        tempdir: &TempDir,
+    ) -> Result<bool, Cause<ErrorType>> {
+        move_from_temp(
+            prefix,
+            parsed,
+            rootdir,
+            tempdir.path(),
+        ).map(|_| true)
+    }
+}
+
 
 pub fn sync(name: Option<String>, mode: common::sequence::Mode) -> Result<bool, Cause<ErrorType>> {
     println!("git-wire sync started\n");
+    let operation = Arc::new(SyncOperation {});
     common::sequence::sequence(
         name,
-        |prefix, parsed, rootdir, tempdir| {
-            Ok(move_from_temp(
-                prefix,
-                parsed,
-                rootdir,
-                tempdir.path(),
-            ).map(|_| true)?)
-        },
+        operation,
         mode,
     )?;
     println!(">> All sync tasks have done!\n");
