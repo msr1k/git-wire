@@ -1,5 +1,9 @@
 use std::process::Command;
 use std::borrow::Cow;
+use std::sync::{
+    OnceLock,
+    Mutex,
+};
 
 use cause::Cause;
 use cause::cause;
@@ -12,11 +16,15 @@ use super::ErrorType::*;
 use super::Parsed;
 use super::Method;
 
+static MUTEX: OnceLock<Mutex<()>> = OnceLock::new();
+
 pub fn fetch_target_to_tempdir(prefix: &str, parsed: &Parsed)
     -> Result<TempDir, Cause<ErrorType>>
 {
-    let tempdir = TempDir::new()
+    let tempdir = TempDir::with_prefix(prefix)
         .or_else(|e| Err(cause!(TempDirCreationError).src(e)))?;
+
+    let _lock = MUTEX.get_or_init(|| Mutex::new(())).lock();
 
     std::env::set_current_dir(tempdir.path())
         .or_else(|e| Err(cause!(GitCheckoutChangeDirectoryError).src(e)))?;
