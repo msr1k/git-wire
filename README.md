@@ -137,17 +137,19 @@ and returns with exit code 1, otherwise returns with 0.
 Options
 ----
 
-### `--name`
+### name
 
 `-n <name>` or `--name <name>` can be added for both command sync and check.
 
 When you add this option, command will be executed only for an item that has specified name.
 
-### `--target`
+### target
 
 `-t <name>` or `--target <name>` can be added for both command sync and check.
 
-### `--singlethread`
+This option is mere alias of `--name` and `-n`.
+
+### singlethread
 
 If you set this, `-s` or `--singlethread`, commands work on single thread.
 
