@@ -41,7 +41,6 @@ pub fn check(name: Option<String>, mode: common::sequence::Mode) -> Result<bool,
         operation,
         mode,
     )?;
-    println!(">> All check tasks have done!\n");
     Ok(result)
 }
 

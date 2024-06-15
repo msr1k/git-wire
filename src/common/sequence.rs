@@ -10,7 +10,7 @@ use crate::common::ErrorType;
 use crate::common::ErrorType::*;
 
 pub enum Mode {
-    Serialized,
+    Single,
     Parallel,
 }
 
@@ -45,12 +45,12 @@ pub fn sequence(
     }
 
     match mode {
-        Mode::Serialized => serialized(parsed, rootdir, operation),
+        Mode::Single => single(parsed, rootdir, operation),
         Mode::Parallel => parallel(parsed, rootdir, operation),
     }
 }
 
-fn serialized(
+fn single(
     parsed: Vec<Parsed>,
     rootdir: String,
     operation: Arc<dyn Operation>,
@@ -59,7 +59,7 @@ fn serialized(
 
     let mut result = true;
     for (i, parsed) in parsed.iter().enumerate() {
-        println!(">> {}/{} started{}", i + 1, len, additional_message_at_start(&parsed));
+        println!(">> {}/{} started{}", i + 1, len, additional_message(&parsed));
         let tempdir = common::fetch::fetch_target_to_tempdir("", parsed)?;
         let success = operation.operate("", &parsed, &rootdir, &tempdir)?;
         if !success {
@@ -67,6 +67,7 @@ fn serialized(
         }
         println!("");
     }
+    println!(">> All check tasks have done!\n");
     Ok(result)
 }
 
@@ -75,34 +76,38 @@ fn parallel(
     rootdir: String,
     operation: Arc<dyn Operation + Send + Sync>,
 ) -> Result<bool, Cause<ErrorType>> {
+    use colored::*;
+
     let len = parsed.len();
     let operation = operation.clone();
 
     let mut result = true;
     std::thread::scope(|s| {
-        let r: Vec<_> = parsed.into_iter().enumerate().map(|(i, parsed)| {
+        parsed.into_iter().enumerate().for_each(|(i, parsed)| {
             s.spawn({
                 let rootdir = rootdir.clone();
                 let operation = operation.clone();
                 move || -> Result<bool, Cause<ErrorType>> {
                     let prefix = format!("No.{i} ");
-                    println!(">> {}({}/{}) started{}", prefix, i + 1, len, additional_message_at_start(&parsed));
+                    println!("{}", format!(">> {}({}/{}) started{}", prefix, i + 1, len, additional_message(&parsed)).blue());
                     let tempdir = common::fetch::fetch_target_to_tempdir(&prefix, &parsed)?;
                     let success = operation.operate(&prefix, &parsed, &rootdir, &tempdir)?;
-                    if !success {
+                    if success {
+                        println!("{}", format!(">> {}({}/{}) succeeded{}", prefix, i + 1, len, additional_message(&parsed)).blue());
+                    } else {
+                        println!("{}", format!(">> {}({}/{}) failed{}", prefix, i + 1, len, additional_message(&parsed)).magenta());
                         result = false;
-                    }
+                    };
                     Ok(result)
                 }
-            })
-        }).collect();
-        let r: Vec<_> = r.into_iter().map(|h| h.join()).collect();
-        println!("{r:?}");
+            });
+        });
     });
+    println!("{}", format!(">> All check tasks have done!\n").blue());
     Ok(result)
 }
 
-fn additional_message_at_start(parsed: &Parsed) -> String {
+fn additional_message(parsed: &Parsed) -> String {
     match (&parsed.name, &parsed.dsc) {
         (Some(name), Some(dsc))     => format!(" ({}: {})", name, dsc),
         (Some(name), None)          => format!(" ({})",     name),
