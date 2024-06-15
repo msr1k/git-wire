@@ -134,11 +134,24 @@ and returns with exit code 1, otherwise returns with 0.
 
     $ git wire check
 
-### ``--name`: Option for both sync and check
+Options
+----
+
+### `--name`
 
 `-n <name>` or `--name <name>` can be added for both command sync and check.
 
-When you add this option, command will be executed only for an item that has specified id.
+When you add this option, command will be executed only for an item that has specified name.
+
+### `--target`
+
+`-t <name>` or `--target <name>` can be added for both command sync and check.
+
+### `--singlethread`
+
+If you set this, `-s` or `--singlethread`, commands work on single thread.
+
+Unless you specify this option, commands work on multiple threads.
 
 A sample .gitwire
 -----------------
@@ -149,6 +162,12 @@ at revision v1.0.0 and v1.1.0 into `src_common_v1.0.0`, `src_common_v1.1.0` dire
 https://github.com/msr1k/git-wire/blob/main/.gitwire
 
 ## Changelog
+
+- v1.4.0 (2024/06/15)
+
+    - Make command execution multi-threaded.
+    - `-s`, `--singlethread` option added to forcibly execute a command with single thread.
+    - `-t`, `--target` option added which is same as existing `-n` and `--name`.
 
 - v1.3.1 (2024/06/09)
 

@@ -1,32 +1,51 @@
 use std::path::Path;
+use std::sync::Arc;
 
 use cause::Cause;
 use cause::cause;
 use folder_compare::FolderCompare;
+use temp_dir::TempDir;
 
 use crate::common;
 use crate::common::Parsed;
 use crate::common::ErrorType;
 use crate::common::ErrorType::*;
+use crate::common::sequence::Operation;
 
-pub fn check(name: Option<String>) -> Result<bool, Cause<ErrorType>> {
+#[derive(Debug)]
+struct CheckOperation {}
+
+impl Operation for CheckOperation {
+    fn operate(
+        &self,
+        prefix: &str,
+        parsed: &Parsed,
+        rootdir: &String,
+        tempdir: &TempDir,
+    ) -> Result<bool, Cause<ErrorType>> {
+        compare_with_temp(
+            prefix,
+            parsed,
+            rootdir,
+            tempdir.path(),
+        )
+    }
+}
+
+
+pub fn check(name: Option<String>, mode: common::sequence::Mode) -> Result<bool, Cause<ErrorType>> {
     println!("git-wire check started\n");
+    let operation = Arc::new(CheckOperation {});
     let result = common::sequence::sequence(
         name,
-        |parsed, rootdir, tempdir| {
-            Ok(compare_with_temp(
-                parsed,
-                rootdir,
-                tempdir.path(),
-            )?)
-        }
+        operation,
+        mode,
     )?;
-    println!(">> All check tasks have done!\n");
     Ok(result)
 }
 
-fn compare_with_temp(parsed: &Parsed, root: &str, temp: &Path) -> Result<bool, Cause<ErrorType>> {
-    println!("  - compare `src` and `dst`");
+fn compare_with_temp(prefix: &str, parsed: &Parsed, root: &str, temp: &Path) -> Result<bool, Cause<ErrorType>> {
+    println!("  - {prefix}compare `src` and `dst`");
 
     let temp_root = temp;
     let temp = temp.join(parsed.src.as_str());
@@ -48,19 +67,19 @@ fn compare_with_temp(parsed: &Parsed, root: &str, temp: &Path) -> Result<bool, C
             let file = file.to_str()
                 .ok_or_else(|| cause!(CheckDifferenceStringReplaceError))?;
             let file = file.replace(temp_root, "");
-            println!("{}", format!("    ! file {:?} does not exist", file).red());
+            println!("{}", format!("    {prefix}! file {:?} does not exist", file).red());
         }
         result = false;
     }
     if fc2.new_files.len() > 0 {
         for file in fc2.new_files {
-            println!("{}", format!("    ! file {:?} does not exist on original", file).red());
+            println!("{}", format!("    {prefix}! file {:?} does not exist on original", file).red());
         }
         result = false;
     }
     if fc2.changed_files.len() > 0 {
         for file in fc2.changed_files {
-            println!("{}", format!("    ! file {:?} is not identical to original", file).red());
+            println!("{}", format!("    {prefix}! file {:?} is not identical to original", file).red());
         }
         result = false;
     }

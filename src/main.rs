@@ -9,31 +9,45 @@ mod common;
 #[command(version, author, about, long_about = None)]
 struct Cli {
     #[command(subcommand)]
-    command: Command
+    command: Command,
+
+    /// Narrow down the scope of commands targets by its name
+    #[arg(global=true, short, long)]
+    name: Option<String>,
+
+    /// Narrow down the scope of commands targets by its name (same as `-n` and `--name`)
+    #[arg(global=true, short, long)]
+    target: Option<String>,
+
+    /// Execute the command with single thread
+    /// (slow, easy-to-read output, low resource consumption)
+    #[arg(global=true, short, long)]
+    singlethread: bool,
 }
 
 #[derive(Subcommand)]
 enum Command {
     /// Synchronizes code depending on a file '.gitwire' definition.
-    Sync {
-        /// Narrow down the scope of the sync command targets by its name
-        #[arg(short, long)]
-        name: Option<String>,
-    },
+    Sync,
+
     /// Checks if the synchronized code identical to the original.
-    Check{
-        /// Narrow down the scope of the check command targets by its name
-        #[arg(short, long)]
-        name: Option<String>,
-    },
+    Check,
 }
 
 fn main() {
     let cli = Cli::parse();
 
+    let target = cli.target.or(cli.name);
+
+    let mode = if cli.singlethread {
+        common::sequence::Mode::Single
+    } else {
+        common::sequence::Mode::Parallel
+    };
+
     let result = match cli.command {
-        Command::Sync{ name } => sync::sync(name),
-        Command::Check{ name } => check::check(name),
+        Command::Sync => sync::sync(target, mode),
+        Command::Check => check::check(target, mode),
     };
 
     use colored::*;
