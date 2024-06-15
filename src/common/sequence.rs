@@ -81,9 +81,8 @@ fn parallel(
     let len = parsed.len();
     let operation = operation.clone();
 
-    let mut result = true;
-    std::thread::scope(|s| {
-        parsed.into_iter().enumerate().for_each(|(i, parsed)| {
+    let results: Vec<_> = std::thread::scope(|s| {
+        let results: Vec<_> = parsed.into_iter().enumerate().map(|(i, parsed)| {
             s.spawn({
                 let rootdir = rootdir.clone();
                 let operation = operation.clone();
@@ -94,17 +93,27 @@ fn parallel(
                     let success = operation.operate(&prefix, &parsed, &rootdir, &tempdir)?;
                     if success {
                         println!("{}", format!(">> {}({}/{}) succeeded{}", prefix, i + 1, len, additional_message(&parsed)).blue());
+                        Ok(true)
                     } else {
                         println!("{}", format!(">> {}({}/{}) failed{}", prefix, i + 1, len, additional_message(&parsed)).magenta());
-                        result = false;
-                    };
-                    Ok(result)
+                        Ok(false)
+                    }
                 }
-            });
-        });
+            })
+        }).collect();
+        results.into_iter().map(|h| h.join().unwrap()).collect()
     });
     println!("{}", format!(">> All check tasks have done!\n").blue());
-    Ok(result)
+
+    let result = if let Some(_) = results.iter().find(|r| matches!(r, Ok(false))) {
+        Ok(false)
+    } else {
+        Ok(true)
+    };
+    if let Some(err) = results.into_iter().find(|r| matches!(r, Err(..))) {
+        return err;
+    }
+    result
 }
 
 fn additional_message(parsed: &Parsed) -> String {
