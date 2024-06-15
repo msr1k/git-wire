@@ -41,7 +41,6 @@ pub fn sync(name: Option<String>, mode: common::sequence::Mode) -> Result<bool, 
         operation,
         mode,
     )?;
-    println!(">> All sync tasks have done!\n");
     Ok(true)
 }
 
