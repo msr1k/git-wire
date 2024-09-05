@@ -5,6 +5,7 @@ use cause::cause;
 use temp_dir::TempDir;
 
 use crate::common;
+use crate::common::Target;
 use crate::common::Parsed;
 use crate::common::ErrorType;
 use crate::common::ErrorType::*;
@@ -25,18 +26,37 @@ pub trait Operation {
 }
 
 pub fn sequence(
-    name: Option<String>,
+    target: Target,
     operation: Arc<dyn Operation + Send + Sync>,
     mode: Mode, 
 ) -> Result<bool, Cause<ErrorType>> {
-    let (rootdir, parsed) = common::parse::parse_gitwire()?;
 
-    let parsed: Vec<_> = if name.is_some() {
-        parsed.into_iter()
-            .filter(|p| p.name.is_some() && p.name == name)
-            .collect()
-    } else {
-        parsed
+    let (rootdir, parsed): (String, Vec<_>) = match target {
+        Target::Declared(Some(ref name)) => {
+            let (rootdir, parsed) = common::parse::parse_gitwire()?;
+            let parsed = parsed.into_iter()
+                .filter(|p| {
+                    match p.name {
+                        Some(ref n) => n == name,
+                        None => false,
+                    }
+                })
+                .collect();
+            (rootdir, parsed)
+        },
+        Target::Declared(None) => {
+            common::parse::parse_gitwire()?
+        },
+        Target::Direct(parsed) => {
+            (
+                std::env::current_dir()
+                    .or(Err(cause!(ErrorType::CurrentDirRetrieveError)))?
+                    .into_os_string()
+                    .into_string()
+                    .or(Err(cause!(ErrorType::CurrentDirConvertError)))?,
+                vec![parsed],
+            )
+        },
     };
 
     let len = parsed.len();

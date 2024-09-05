@@ -7,6 +7,7 @@ use folder_compare::FolderCompare;
 use temp_dir::TempDir;
 
 use crate::common;
+use crate::common::Target;
 use crate::common::Parsed;
 use crate::common::ErrorType;
 use crate::common::ErrorType::*;
@@ -33,11 +34,11 @@ impl Operation for CheckOperation {
 }
 
 
-pub fn check(name: Option<String>, mode: common::sequence::Mode) -> Result<bool, Cause<ErrorType>> {
+pub fn check(target: Target, mode: common::sequence::Mode) -> Result<bool, Cause<ErrorType>> {
     println!("git-wire check started\n");
     let operation = Arc::new(CheckOperation {});
     let result = common::sequence::sequence(
-        name,
+        target,
         operation,
         mode,
     )?;

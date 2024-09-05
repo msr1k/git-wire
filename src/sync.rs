@@ -8,10 +8,12 @@ use cause::cause;
 use fs_extra;
 use temp_dir::TempDir;
 
+use crate::common::Target;
 use crate::common::Parsed;
 use crate::common::ErrorType;
 use crate::common::ErrorType::*;
 use crate::common::sequence::Operation;
+
 
 struct SyncOperation {}
 
@@ -33,11 +35,11 @@ impl Operation for SyncOperation {
 }
 
 
-pub fn sync(name: Option<String>, mode: common::sequence::Mode) -> Result<bool, Cause<ErrorType>> {
+pub fn sync(target: Target, mode: common::sequence::Mode) -> Result<bool, Cause<ErrorType>> {
     println!("git-wire sync started\n");
     let operation = Arc::new(SyncOperation {});
     common::sequence::sequence(
-        name,
+        target,
         operation,
         mode,
     )?;
