@@ -114,7 +114,7 @@ it could be significantly slow as the number of files grows.
 There is a faint chance that it might be sperior than `"shallow"` in terms of memory consumption.
 But basically it seems no motivation to use this method.
 
-Commands
+Main Commands
 --------
 
 ### sync
@@ -134,7 +134,7 @@ and returns with exit code 1, otherwise returns with 0.
 
     $ git wire check
 
-Options
+Options for main commands
 ----
 
 ### name
@@ -155,6 +155,26 @@ If you set this, `-s` or `--singlethread`, commands work on single thread.
 
 Unless you specify this option, commands work on multiple threads.
 
+Other Commands
+--------
+
+### direct-sync
+
+Almost same as `sync` but it is performed based on arguments given instead `.gitwire` definition.
+
+    $ git wire direct-sync --help
+
+The meaning of arguments are equivalent to the conrresponding `.gitwire` JSON key-value.
+
+### direct-check
+
+Almost same as `check` but it is performed based on arguments given instead `.gitwire` definition.
+
+    $ git wire direct-check --help
+
+The meaning of arguments are equivalent to the conrresponding `.gitwire` JSON key-value.
+
+
 A sample .gitwire
 -----------------
 
@@ -164,6 +184,10 @@ at revision v1.0.0 and v1.1.0 into `src_common_v1.0.0`, `src_common_v1.1.0` dire
 https://github.com/msr1k/git-wire/blob/main/.gitwire
 
 ## Changelog
+
+- v1.5.0 (2024/09/6)
+
+    - Added `direct-sync` and `direct-check` commands
 
 - v1.4.0 (2024/06/15)
 
