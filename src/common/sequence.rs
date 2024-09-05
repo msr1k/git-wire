@@ -48,7 +48,7 @@ pub fn sequence(
             common::parse::parse_gitwire()?
         },
         Target::Direct(parsed) => {
-            (".".to_owned(), vec![parsed])
+            (std::env::current_dir().unwrap().into_os_string().into_string().unwrap(), vec![parsed]) // TODO
         },
     };
 
