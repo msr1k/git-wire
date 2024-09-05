@@ -32,7 +32,33 @@ enum Command {
 
     /// Checks if the synchronized code identical to the original.
     Check,
+
+    /// Directly synchronizes code depending on given arguments
+    DirectSync {
+        #[arg(long)]
+        url: String,
+        #[arg(long)]
+        rev: String,
+        #[arg(long)]
+        src: String,
+        #[arg(long)]
+        dst: String,
+    },
+
+    /// DIrectly checks if the code is identical to the code led by given arguments.
+    DirectCheck {
+        #[arg(long)]
+        url: String,
+        #[arg(long)]
+        rev: String,
+        #[arg(long)]
+        src: String,
+        #[arg(long)]
+        dst: String,
+    },
 }
+
+use common::{Target, Parsed};
 
 fn main() {
     let cli = Cli::parse();
@@ -46,8 +72,36 @@ fn main() {
     };
 
     let result = match cli.command {
-        Command::Sync => sync::sync(target, mode),
-        Command::Check => check::check(target, mode),
+        Command::Sync => sync::sync(Target::Declared(target), mode),
+        Command::Check => check::check(Target::Declared(target), mode),
+        Command::DirectSync {
+            url,
+            rev,
+            src,
+            dst,
+        } => sync::sync(Target::Direct(Parsed {
+                name: None,
+                dsc: None,
+                mtd: None,
+                url,
+                rev,
+                src,
+                dst,
+            }), mode),
+        Command::DirectCheck {
+            url,
+            rev,
+            src,
+            dst,
+        } => check::check(Target::Direct(Parsed {
+                name: None,
+                dsc: None,
+                mtd: None,
+                url,
+                rev,
+                src,
+                dst,
+            }), mode),
     };
 
     use colored::*;
