@@ -5,6 +5,8 @@ use folder_compare::Error;
 pub enum ErrorType {
     RepositoryRootPathCommandError,
     RepositoryRootPathParseError,
+    CurrentDirRetrieveError,
+    CurrentDirConvertError,
     DotGitWireFileOpenError,
     DotGitWireFileParseError,
     DotGitWireFileSoundnessError,

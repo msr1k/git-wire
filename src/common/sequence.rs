@@ -48,7 +48,14 @@ pub fn sequence(
             common::parse::parse_gitwire()?
         },
         Target::Direct(parsed) => {
-            (std::env::current_dir().unwrap().into_os_string().into_string().unwrap(), vec![parsed]) // TODO
+            (
+                std::env::current_dir()
+                    .or(Err(cause!(ErrorType::CurrentDirRetrieveError)))?
+                    .into_os_string()
+                    .into_string()
+                    .or(Err(cause!(ErrorType::CurrentDirConvertError)))?,
+                vec![parsed],
+            )
         },
     };
 
