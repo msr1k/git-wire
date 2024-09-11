@@ -5,8 +5,8 @@ A git subcommand
 which wires part of other repositoriy's source code
 into the repository in a declarative manner.
 
-Instration
-----------
+installation
+------------
 
 - If your environment have rust installed:
 
