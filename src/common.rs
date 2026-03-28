@@ -29,7 +29,7 @@ pub enum ErrorType {
     GitLsRemoteCommandStdoutRegexError,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Method {
     #[serde(rename = "shallow")]
     Shallow,
@@ -42,7 +42,7 @@ pub enum Method {
 }
 
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Parsed {
     pub name: Option<String>,
     pub dsc: Option<String>,
@@ -56,6 +56,7 @@ pub struct Parsed {
 pub enum Target {
     Declared(Option<String>),
     Local(Option<String>),
+    Direct(Parsed),
 }
 
 pub mod parse;

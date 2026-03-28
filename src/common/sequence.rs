@@ -52,6 +52,16 @@ pub fn sequence(
         Target::Local(None) => {
             common::parse::parse_gitwire_local()?
         },
+        Target::Direct(parsed) => {
+            (
+                std::env::current_dir()
+                    .or(Err(cause!(ErrorType::CurrentDirRetrieveError)))?
+                    .into_os_string()
+                    .into_string()
+                    .or(Err(cause!(ErrorType::CurrentDirConvertError)))?,
+                vec![parsed],
+            )
+        },
     };
 
     let len = parsed.len();

@@ -88,3 +88,42 @@ fn sequence_target_local_some_name_returns_no_item_error_when_name_not_found_in_
     // Then: the filter produces an empty list → NoItemToOperateError
     assert!(matches!(*result.unwrap_err(), NoItemToOperateError));
 }
+
+// --- Target::Direct(parsed): routing bypasses .gitwire file parsing ---
+
+#[test]
+fn sequence_target_direct_bypasses_file_parsing_and_always_has_one_item() {
+    // Given: a Parsed value supplied directly; no .gitwire / .gitwire_local is required,
+    // and Direct always wraps exactly one item so NoItemToOperateError cannot occur.
+    let _lock = FILE_LOCK.lock().unwrap();
+    let saved_cwd = std::env::current_dir().unwrap();
+
+    let parsed = Parsed {
+        name: None,
+        dsc: None,
+        mtd: None,
+        url: "not-a-url".to_string(),
+        rev: "main".to_string(),
+        src: "src".to_string(),
+        dst: "dst".to_string(),
+    };
+    let op = Arc::new(NeverCalledOperation);
+
+    // When: sequence is called with Target::Direct (neither .gitwire file is read)
+    let result = sequence(Target::Direct(parsed), op, Mode::Single);
+
+    // fetch_target_to_tempdir changes the process cwd; restore it for subsequent tests
+    let _ = std::env::set_current_dir(&saved_cwd);
+
+    // Then: error originates from the git network operation, not from file parsing or
+    // an empty item list.
+    let err = result.unwrap_err();
+    assert!(
+        !matches!(*err, DotGitWireFileOpenError),
+        "Target::Direct must not trigger DotGitWireFileOpenError"
+    );
+    assert!(
+        !matches!(*err, NoItemToOperateError),
+        "Target::Direct must never produce NoItemToOperateError"
+    );
+}
