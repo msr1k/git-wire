@@ -25,7 +25,7 @@ struct Cli {
     singlethread: bool,
 
     /// Use .gitwire_local in the current directory instead of .gitwire
-    #[arg(global=true, long)]
+    #[arg(global=true, short, long)]
     local: bool,
 }
 
