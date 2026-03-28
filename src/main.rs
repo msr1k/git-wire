@@ -23,6 +23,10 @@ struct Cli {
     /// (slow, easy-to-read output, low resource consumption)
     #[arg(global=true, short, long)]
     singlethread: bool,
+
+    /// Use .gitwire_local in the current directory instead of .gitwire
+    #[arg(global=true, long)]
+    local: bool,
 }
 
 #[derive(Subcommand)]
@@ -32,33 +36,9 @@ enum Command {
 
     /// Checks if the synchronized code identical to the original.
     Check,
-
-    /// Directly synchronizes code depending on given arguments
-    DirectSync {
-        #[arg(long)]
-        url: String,
-        #[arg(long)]
-        rev: String,
-        #[arg(long)]
-        src: String,
-        #[arg(long)]
-        dst: String,
-    },
-
-    /// DIrectly checks if the code is identical to the code led by given arguments.
-    DirectCheck {
-        #[arg(long)]
-        url: String,
-        #[arg(long)]
-        rev: String,
-        #[arg(long)]
-        src: String,
-        #[arg(long)]
-        dst: String,
-    },
 }
 
-use common::{Target, Parsed};
+use common::Target;
 
 fn main() {
     let cli = Cli::parse();
@@ -71,37 +51,11 @@ fn main() {
         common::sequence::Mode::Parallel
     };
 
+    let target = if cli.local { Target::Local(target) } else { Target::Declared(target) };
+
     let result = match cli.command {
-        Command::Sync => sync::sync(Target::Declared(target), mode),
-        Command::Check => check::check(Target::Declared(target), mode),
-        Command::DirectSync {
-            url,
-            rev,
-            src,
-            dst,
-        } => sync::sync(Target::Direct(Parsed {
-                name: None,
-                dsc: None,
-                mtd: None,
-                url,
-                rev,
-                src,
-                dst,
-            }), mode),
-        Command::DirectCheck {
-            url,
-            rev,
-            src,
-            dst,
-        } => check::check(Target::Direct(Parsed {
-                name: None,
-                dsc: None,
-                mtd: None,
-                url,
-                rev,
-                src,
-                dst,
-            }), mode),
+        Command::Sync => sync::sync(target, mode),
+        Command::Check => check::check(target, mode),
     };
 
     use colored::*;

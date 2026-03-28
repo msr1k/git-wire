@@ -10,9 +10,23 @@ use super::ErrorType::{self, *};
 use super::Parsed;
 
 const DOT_GIT_WIRE: &str = ".gitwire";
+const DOT_GIT_WIRE_LOCAL: &str = ".gitwire_local";
 
 pub fn parse_gitwire() -> Result<(String, Vec<Parsed>), Cause<ErrorType>> {
     let (root, file) = get_dotgitwire_file_path()?;
+    Ok((root, parse_dotgitwire_file(file)?))
+}
+
+pub fn parse_gitwire_local() -> Result<(String, Vec<Parsed>), Cause<ErrorType>> {
+    let cwd = std::env::current_dir()
+        .or_else(|_| Err(cause!(CurrentDirRetrieveError)))?;
+    let root = cwd.into_os_string()
+        .into_string()
+        .or_else(|_| Err(cause!(CurrentDirConvertError)))?;
+    let file = format!("{}/{}", root, DOT_GIT_WIRE_LOCAL);
+    if !Path::new(&file).exists() {
+        return Err(cause!(DotGitWireFileOpenError, "There is no .gitwire_local file in this directory"));
+    }
     Ok((root, parse_dotgitwire_file(file)?))
 }
 
@@ -83,3 +97,6 @@ fn check_parsed_item_soundness(parsed: &Parsed) -> bool {
     let dst_result_ok = Path::new(&parsed.dst).components().all(|p| is_ok(&p));
     src_result_ok && dst_result_ok
 }
+
+#[cfg(test)]
+pub(crate) mod parse_test;
