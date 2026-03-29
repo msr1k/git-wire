@@ -68,7 +68,7 @@ fn move_from_temp(
             Err(cause)
         })?;
 
-    fs_extra::move_items(&[&from], &to, &opt)
+    fs_extra::copy_items(&[&from], &to, &opt)
         .or_else(|e| {
             let cause = cause!(MoveFromTempToDestError).src(e)
                 .msg(format!("Could not copy from {:?} to {:?}", from, to));
