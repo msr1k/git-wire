@@ -195,6 +195,13 @@ https://github.com/msr1k/git-wire/blob/main/.gitwire
 
 ## Changelog
 
+- v1.7.0 (2026/03/29)
+
+    - Multi-threading performance improvements.
+        - Reuses other temporary clones to checking or syncing.  
+          (It minimizes the number of clone operations.)
+    - No changes in functionality.
+
 - v1.6.0 (2026/03/29)
 
     - Added `--local` (`-l`) option to `sync` and `check` commands.
