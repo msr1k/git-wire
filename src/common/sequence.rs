@@ -128,13 +128,12 @@ fn parallel(
                     // key for deduplication (stable string for Method)
                     let key = create_parallel_fetch_key(&parsed);
 
-                    // Try to get existing TempDir under lock, then drop lock before IO
+                    // Try to get existing TempDir mutex or create it
                     let td_arc_opt = {
                         let mut map = dedup_map.lock().map_err(|_| cause!(ErrorType::TempDirCreationError))?;
                         let val = map.get(&key).cloned();
                         match val {
                             Some(v) => {
-                                // wait for a while to be unlocked
                                 v.clone()
                             },
                             None => {
@@ -148,15 +147,20 @@ fn parallel(
 
                     match td_arc_opt.as_ref() {
                         Some(td_arc) => {
+                            // tempdir has been set already
+                            // no need to perform fetch, just use it.
                             println!("  - {prefix}reuse existing clone: {} ({})", parsed.url, parsed.rev);
-                            tx.send((prefix, parsed, Arc::new(td_arc.clone()))).map_err(|_| cause!(ErrorType::TempDirCreationError))?;
+                            tx.send((prefix, parsed, Arc::new(td_arc.clone())))
+                                .map_err(|_| cause!(ErrorType::TempDirCreationError))?;
                             Ok(true)
                         },
                         None => {
-                            // Not found — perform fetch without holding the global lock
+                            // tempdir has not been set
+                            // perform fetch and set earned tempdir value to the map
                             let tempdir = common::fetch::fetch_target_to_tempdir(&prefix, &parsed)?;
                             *td_arc_opt = Some(tempdir.clone());
-                            tx.send((prefix, parsed, Arc::new(tempdir))).map_err(|_| cause!(ErrorType::TempDirCreationError))?;
+                            tx.send((prefix, parsed, Arc::new(tempdir)))
+                                .map_err(|_| cause!(ErrorType::TempDirCreationError))?;
                             Ok(true)
                         }
                     }
