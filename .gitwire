@@ -7,6 +7,14 @@
     "dst": "src_common_v1.0.0"
   },
   {
+    "name": "v1.0.0_common_2",
+    "dsc": "reuse v1.0.0_common temporary cloned repository",
+    "url": "https://github.com/msr1k/git-wire.git",
+    "rev": "v1.0.0",
+    "src": "src/common",
+    "dst": "src_common_v1.0.0_2"
+  },
+  {
     "name": "v1.1.0_common",
     "dsc": "src/common at the timing of v1.1.0 release",
     "url": "https://github.com/msr1k/git-wire.git",

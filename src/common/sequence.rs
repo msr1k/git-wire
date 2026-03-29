@@ -111,73 +111,73 @@ fn parallel(
     let operation = operation.clone();
 
     // Channel to send (prefix, parsed, Arc<TempDir>) from producers to consumer
-    let (tx, rx) = mpsc::channel::<(String, Parsed, Arc<TempDir>)>();
     let dedup_map = Arc::new(Mutex::new(HashMap::<String, Arc<TempDir>>::new()));
 
     // Spawn producers to prepare tempdirs (deduplicating by url+rev+mtd) and send messages
-    let produce_results: Vec<_> = std::thread::scope(|s| {
+    let produce_results: Result<Vec<bool>, Cause<ErrorType>> = std::thread::scope(|s| {
         let handles: Vec<_> = parsed.into_iter().enumerate().map(|(i, parsed)| {
-            let tx = tx.clone();
-            let dedup_map = dedup_map.clone();
-            s.spawn(move || -> Result<bool, Cause<ErrorType>> {
-                let prefix = format!("No.{i} ");
-                println!("{}", format!(">> {}({}/{}) started{}", prefix, i + 1, len, additional_message(&parsed)).blue());
+            let (tx, rx) = mpsc::channel::<(String, Parsed, Arc<TempDir>)>();
 
-                // key for deduplication (stable string for Method)
-                let method_label = match &parsed.mtd {
-                    Some(m) => match m {
-                        crate::common::Method::Shallow => "shallow",
-                        crate::common::Method::ShallowNoSparse => "shallow_no_sparse",
-                        crate::common::Method::Partial => "partial",
-                    },
-                    None => "none",
-                };
-                let key = format!("{}|{}|{}", parsed.url, parsed.rev, method_label);
+            s.spawn({
+                let dedup_map = dedup_map.clone();
+                let prefix = format!("No.{} ", i + 1);
 
-                // Acquire lock and check or create TempDir
-                let mut map = dedup_map.lock().map_err(|_| cause!(ErrorType::TempDirCreationError))?;
-                if let Some(td) = map.get(&key) {
-                    let td_arc = td.clone();
-                    drop(map);
-                    tx.send((prefix, parsed, td_arc)).map_err(|_| cause!(ErrorType::TempDirCreationError))?;
-                    Ok(true)
-                } else {
-                    // Create tempdir and store as Arc
-                    let tempdir = common::fetch::fetch_target_to_tempdir(&prefix, &parsed)?;
-                    let td_arc = Arc::new(tempdir);
-                    map.insert(key, td_arc.clone());
-                    drop(map);
-                    tx.send((prefix, parsed, td_arc)).map_err(|_| cause!(ErrorType::TempDirCreationError))?;
-                    Ok(true)
+                move || -> Result<bool, Cause<ErrorType>> {
+                    println!("{}", format!(">> {}({}/{}) started{}", prefix, i + 1, len, additional_message(&parsed)).blue());
+
+                    // key for deduplication (stable string for Method)
+                    let key = create_parallel_fetch_key(&parsed);
+
+                    // Acquire lock and check or create TempDir
+                    let mut map = dedup_map.lock().map_err(|_| cause!(ErrorType::TempDirCreationError))?;
+
+                    if let Some(td) = map.get(&key) {
+                        let td_arc = td.clone();
+                        println!("  - {prefix}reuse existing clone: {} ({})", parsed.url, parsed.rev);
+                        tx.send((prefix, parsed, td_arc)).map_err(|_| cause!(ErrorType::TempDirCreationError))?;
+                        Ok(true)
+                    } else {
+                        // Create tempdir and store as Arc
+                        let tempdir = common::fetch::fetch_target_to_tempdir(&prefix, &parsed)?;
+                        let td_arc = Arc::new(tempdir);
+                        map.insert(key, td_arc.clone());
+                        tx.send((prefix, parsed, td_arc)).map_err(|_| cause!(ErrorType::TempDirCreationError))?;
+                        Ok(true)
+                    }
+                }
+            });
+
+            s.spawn({
+                let rootdir = rootdir.clone();
+                let operation = operation.clone();
+
+                move || -> Result<bool, Cause<ErrorType>> {
+                    if let Ok((prefix, parsed, tempdir_arc)) = rx.recv() {
+                        let success = operation.operate(&prefix, &parsed, &rootdir, tempdir_arc.path())?;
+                        if success {
+                            println!("{}", format!(">> {} succeeded{}", prefix, additional_message(&parsed)).blue());
+                            Ok(true)
+                        } else {
+                            println!("{}", format!(">> {} failed{}", prefix, additional_message(&parsed)).magenta());
+                            Ok(false)
+                        }
+                    } else {
+                        Err(cause!(ErrorType::TempDirCreationError))
+                    }
                 }
             })
         }).collect();
+
         handles.into_iter().map(|h| h.join().unwrap()).collect()
     });
 
     // Check producer errors
-    if let Some(err) = produce_results.into_iter().find(|r| matches!(r, Err(..))) {
-        return err;
+    if let Err(err) = produce_results {
+        Err(err)
+    } else {
+        println!("{}", format!(">> All check tasks have done!\n").blue());
+        Ok(true)
     }
-
-    // All producers finished; drop the original sender so receiver iterator ends when all clones are dropped
-    drop(tx);
-
-    // Consume messages serially and run operation
-    let mut overall = true;
-    for (prefix, parsed, tempdir_arc) in rx {
-        let success = operation.operate(&prefix, &parsed, &rootdir, tempdir_arc.path())?;
-        if success {
-            println!("{}", format!(">> {} succeeded{}", prefix, additional_message(&parsed)).blue());
-        } else {
-            println!("{}", format!(">> {} failed{}", prefix, additional_message(&parsed)).magenta());
-            overall = false;
-        }
-        println!("");
-    }
-
-    println!("{}", format!(">> All check tasks have done!\n").blue());
-    Ok(overall)
 }
 
 fn additional_message(parsed: &Parsed) -> String {
@@ -187,6 +187,19 @@ fn additional_message(parsed: &Parsed) -> String {
         (None,       Some(ref dsc)) => format!(" ({})",     dsc),
         (None,       None)          => "".to_owned(),
     }
+}
+
+fn create_parallel_fetch_key(parsed: &Parsed) -> String {
+    // key for deduplication (stable string for Method)
+    let method_label = match &parsed.mtd {
+        Some(m) => match m {
+            crate::common::Method::Shallow => "shallow",
+            crate::common::Method::ShallowNoSparse => "shallow_no_sparse",
+            crate::common::Method::Partial => "partial",
+        },
+        None => "default",
+    };
+    format!("{}|{}|{}", parsed.url, parsed.rev, method_label)
 }
 
 #[cfg(test)]
