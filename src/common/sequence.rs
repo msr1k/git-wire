@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use std::path::Path;
 
 use cause::Cause;
 use cause::cause;
@@ -21,7 +22,7 @@ pub trait Operation {
         prefix: &str,
         parsed: &Parsed,
         rootdir: &String,
-        tempdir: &TempDir,
+        workdir: &Path,
     ) -> Result<bool, Cause<ErrorType>>;
 }
 
@@ -86,7 +87,7 @@ fn single(
     for (i, parsed) in parsed.iter().enumerate() {
         println!(">> {}/{} started{}", i + 1, len, additional_message(&parsed));
         let tempdir = common::fetch::fetch_target_to_tempdir("", parsed)?;
-        let success = operation.operate("", &parsed, &rootdir, &tempdir)?;
+        let success = operation.operate("", &parsed, &rootdir, tempdir.path())?;
         if !success {
             result = false;
         }
@@ -118,14 +119,20 @@ fn parallel(
         let handles: Vec<_> = parsed.into_iter().enumerate().map(|(i, parsed)| {
             let tx = tx.clone();
             let dedup_map = dedup_map.clone();
-            let rootdir = rootdir.clone();
-            let operation = operation.clone();
             s.spawn(move || -> Result<bool, Cause<ErrorType>> {
                 let prefix = format!("No.{i} ");
                 println!("{}", format!(">> {}({}/{}) started{}", prefix, i + 1, len, additional_message(&parsed)).blue());
 
-                // key for deduplication
-                let key = format!("{}|{}|{:?}", parsed.url, parsed.rev, parsed.mtd);
+                // key for deduplication (stable string for Method)
+                let method_label = match &parsed.mtd {
+                    Some(m) => match m {
+                        crate::common::Method::Shallow => "shallow",
+                        crate::common::Method::ShallowNoSparse => "shallow_no_sparse",
+                        crate::common::Method::Partial => "partial",
+                    },
+                    None => "none",
+                };
+                let key = format!("{}|{}|{}", parsed.url, parsed.rev, method_label);
 
                 // Acquire lock and check or create TempDir
                 let mut map = dedup_map.lock().map_err(|_| cause!(ErrorType::TempDirCreationError))?;
@@ -159,7 +166,7 @@ fn parallel(
     // Consume messages serially and run operation
     let mut overall = true;
     for (prefix, parsed, tempdir_arc) in rx {
-        let success = operation.operate(&prefix, &parsed, &rootdir, &*tempdir_arc)?;
+        let success = operation.operate(&prefix, &parsed, &rootdir, tempdir_arc.path())?;
         if success {
             println!("{}", format!(">> {} succeeded{}", prefix, additional_message(&parsed)).blue());
         } else {
