@@ -1,4 +1,4 @@
-// Integration tests for DirectSync / DirectCheck CLI commands.
+// Integration tests for CLI commands.
 //
 // These tests run the compiled binary to verify that the subcommands are
 // recognised, parse their required arguments correctly, and produce useful
@@ -158,5 +158,99 @@ fn direct_check_accepts_local_flag_at_parse_level() {
     assert!(
         output.status.success(),
         "--local should not cause a parse error for direct-check"
+    );
+}
+
+// --- sync: --local flag is accepted ---
+
+#[test]
+fn sync_help_mentions_local_flag() {
+    // Given: sync --help
+    let output = std::process::Command::new(BIN)
+        .args(["sync", "--help"])
+        .output()
+        .expect("failed to run binary");
+
+    // Then: exits 0 and help text documents the --local / -l flag
+    assert!(output.status.success(), "sync --help should exit 0");
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(stdout.contains("--local"), "sync --help should mention --local\n{stdout}");
+    assert!(stdout.contains("-l"), "sync --help should mention -l\n{stdout}");
+}
+
+#[test]
+fn sync_accepts_local_flag_at_parse_level() {
+    // Given: --local is a global flag; it must be accepted with sync
+    let output = std::process::Command::new(BIN)
+        .args(["sync", "--local", "--help"])
+        .output()
+        .expect("failed to run binary");
+
+    // Then: exits 0 (--local does not cause a parse error)
+    assert!(
+        output.status.success(),
+        "--local should not cause a parse error for sync"
+    );
+}
+
+#[test]
+fn sync_accepts_local_short_flag_at_parse_level() {
+    // Given: -l is the short form of --local; it must be accepted with sync
+    let output = std::process::Command::new(BIN)
+        .args(["sync", "-l", "--help"])
+        .output()
+        .expect("failed to run binary");
+
+    // Then: exits 0 (-l does not cause a parse error)
+    assert!(
+        output.status.success(),
+        "-l should not cause a parse error for sync"
+    );
+}
+
+// --- check: --local flag is accepted ---
+
+#[test]
+fn check_help_mentions_local_flag() {
+    // Given: check --help
+    let output = std::process::Command::new(BIN)
+        .args(["check", "--help"])
+        .output()
+        .expect("failed to run binary");
+
+    // Then: exits 0 and help text documents the --local / -l flag
+    assert!(output.status.success(), "check --help should exit 0");
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(stdout.contains("--local"), "check --help should mention --local\n{stdout}");
+    assert!(stdout.contains("-l"), "check --help should mention -l\n{stdout}");
+}
+
+#[test]
+fn check_accepts_local_flag_at_parse_level() {
+    // Given: --local is a global flag; it must be accepted with check
+    let output = std::process::Command::new(BIN)
+        .args(["check", "--local", "--help"])
+        .output()
+        .expect("failed to run binary");
+
+    // Then: exits 0 (--local does not cause a parse error)
+    assert!(
+        output.status.success(),
+        "--local should not cause a parse error for check"
+    );
+}
+
+#[test]
+fn check_accepts_local_short_flag_at_parse_level() {
+    // Given: -l is the short form of --local; it must be accepted with check
+    let output = std::process::Command::new(BIN)
+        .args(["check", "-l", "--help"])
+        .output()
+        .expect("failed to run binary");
+
+    // Then: exits 0 (-l does not cause a parse error)
+    assert!(
+        output.status.success(),
+        "-l should not cause a parse error for check"
     );
 }
