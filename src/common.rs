@@ -21,6 +21,7 @@ pub enum ErrorType {
     GitFetchCommandExitStatusError,
     MoveFromTempToDestError,
     NoItemToOperateError,
+    #[allow(dead_code)]
     CheckDifferenceExecutionError(Error),
     CheckDifferenceStringReplaceError,
     GitLsRemoteCommandError,
