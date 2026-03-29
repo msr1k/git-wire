@@ -16,7 +16,6 @@ pub enum ErrorType {
     GitCloneCommandExitStatusError,
     GitCheckoutCommandError,
     GitCheckoutCommandExitStatusError,
-    GitCheckoutChangeDirectoryError,
     GitFetchCommandError,
     GitFetchCommandExitStatusError,
     MoveFromTempToDestError,

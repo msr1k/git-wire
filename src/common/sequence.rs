@@ -128,20 +128,31 @@ fn parallel(
                     // key for deduplication (stable string for Method)
                     let key = create_parallel_fetch_key(&parsed);
 
-                    // Acquire lock and check or create TempDir
-                    let mut map = dedup_map.lock().map_err(|_| cause!(ErrorType::TempDirCreationError))?;
+                    // Try to get existing TempDir under lock, then drop lock before IO
+                    let td_arc_opt = {
+                        let map = dedup_map.lock().map_err(|_| cause!(ErrorType::TempDirCreationError))?;
+                        map.get(&key).cloned()
+                    };
 
-                    if let Some(td) = map.get(&key) {
-                        let td_arc = td.clone();
+                    if let Some(td_arc) = td_arc_opt {
                         println!("  - {prefix}reuse existing clone: {} ({})", parsed.url, parsed.rev);
                         tx.send((prefix, parsed, td_arc)).map_err(|_| cause!(ErrorType::TempDirCreationError))?;
                         Ok(true)
                     } else {
-                        // Create tempdir and store as Arc
+                        // Not found — perform fetch without holding the global lock
                         let tempdir = common::fetch::fetch_target_to_tempdir(&prefix, &parsed)?;
                         let td_arc = Arc::new(tempdir);
-                        map.insert(key, td_arc.clone());
-                        tx.send((prefix, parsed, td_arc)).map_err(|_| cause!(ErrorType::TempDirCreationError))?;
+                        // Try to insert; another thread may have inserted in the meantime.
+                        {
+                            let mut map = dedup_map.lock().map_err(|_| cause!(ErrorType::TempDirCreationError))?;
+                            let existing = map.get(&key).cloned();
+                            if let Some(existing_arc) = existing {
+                                tx.send((prefix, parsed, existing_arc)).map_err(|_| cause!(ErrorType::TempDirCreationError))?;
+                            } else {
+                                map.insert(key.clone(), td_arc.clone());
+                                tx.send((prefix, parsed, td_arc)).map_err(|_| cause!(ErrorType::TempDirCreationError))?;
+                            }
+                        }
                         Ok(true)
                     }
                 }
@@ -171,12 +182,17 @@ fn parallel(
         handles.into_iter().map(|h| h.join().unwrap()).collect()
     });
 
-    // Check producer errors
-    if let Err(err) = produce_results {
-        Err(err)
-    } else {
-        println!("{}", format!(">> All check tasks have done!\n").blue());
-        Ok(true)
+    // Check producer errors and aggregate results
+    match produce_results {
+        Err(err) => Err(err),
+        Ok(results) => {
+            println!("{}", format!(">> All check tasks have done!\n").blue());
+            if results.iter().all(|r| *r) {
+                Ok(true)
+            } else {
+                Ok(false)
+            }
+        }
     }
 }
 
