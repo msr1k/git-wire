@@ -25,6 +25,12 @@ pub trait Operation {
     ) -> Result<bool, Cause<ErrorType>>;
 }
 
+fn filter_by_name(parsed: Vec<Parsed>, name: &str) -> Vec<Parsed> {
+    parsed.into_iter()
+        .filter(|p| matches!(&p.name, Some(n) if n == name))
+        .collect()
+}
+
 pub fn sequence(
     target: Target,
     operation: Arc<dyn Operation + Send + Sync>,
@@ -34,18 +40,17 @@ pub fn sequence(
     let (rootdir, parsed): (String, Vec<_>) = match target {
         Target::Declared(Some(ref name)) => {
             let (rootdir, parsed) = common::parse::parse_gitwire()?;
-            let parsed = parsed.into_iter()
-                .filter(|p| {
-                    match p.name {
-                        Some(ref n) => n == name,
-                        None => false,
-                    }
-                })
-                .collect();
-            (rootdir, parsed)
+            (rootdir, filter_by_name(parsed, name))
         },
         Target::Declared(None) => {
             common::parse::parse_gitwire()?
+        },
+        Target::Local(Some(ref name)) => {
+            let (rootdir, parsed) = common::parse::parse_gitwire_local()?;
+            (rootdir, filter_by_name(parsed, name))
+        },
+        Target::Local(None) => {
+            common::parse::parse_gitwire_local()?
         },
         Target::Direct(parsed) => {
             (
@@ -144,3 +149,6 @@ fn additional_message(parsed: &Parsed) -> String {
         (None,       None)          => "".to_owned(),
     }
 }
+
+#[cfg(test)]
+mod sequence_test;

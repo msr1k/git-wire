@@ -2,7 +2,7 @@ git-wire
 ========
 
 A git subcommand
-which wires part of other repositoriy's source code
+which wires part of other repository's source code
 into the repository in a declarative manner.
 
 installation
@@ -32,7 +32,7 @@ Create a file named `.gitwire` at the root of the repository with following JSON
     "url": "url-of-the-repository",
     "rev": "revision (commit hash or branch name or tag name)",
     "src": "source directory of the target repository",
-    "dst": "directory where to put the `src` on this repositry"
+    "dst": "directory where to put the `src` on this repository"
   },
   ...
 ]
@@ -50,7 +50,7 @@ It can be used to narrow down the scope of the command into particular item.
     "url": "url-of-the-repository",
     "rev": "revision (commit hash or branch name or tag name)",
     "src": "source directory of the target repository",
-    "dst": "directory where to put the `src` on this repositry"
+    "dst": "directory where to put the `src` on this repository"
   },
   ...
 ]
@@ -66,7 +66,7 @@ Optionally, you can also define `"dsc"` to describe the item.
     "url": "url-of-the-repository",
     "rev": "revision (commit hash or branch name or tag name)",
     "src": "source directory of the target repository",
-    "dst": "directory where to put the `src` on this repositry"
+    "dst": "directory where to put the `src` on this repository"
   },
   ...
 ]
@@ -81,7 +81,7 @@ Optionally, you can select a method, `"shallow"`, `"shallow_no_sparse"`, and `"p
     "url": "url-of-the-repository",
     "rev": "revision (commit hash or branch name or tag name)",
     "src": "source directory of the target repository",
-    "dst": "directory where to put the `src` on this repositry",
+    "dst": "directory where to put the `src` on this repository",
     "mtd": "shallow/shallow_no_sparse/partial"
   },
   ...
@@ -101,7 +101,7 @@ If you omit `"mtd"` key, `"shallow"` method will be used automatically.
 `"shallow_no_sparse"` gets all the files managed by that repository at once from specified `rev`,
 it inherently requires more memory and temporary storage than `"shallow"` and `"partial"`,
 but it must be faster than `"partial"` if there are many files to `sync`.  
-(It must not faster than `"shallow"`.)
+(It must not be faster than `"shallow"`.)
 
 I assume that it is the alternative method when you face some problems by using `"shallow"`.
 
@@ -111,7 +111,7 @@ Since it performs downloading for each file respectively (it is mere git command
 it could be significantly slow as the number of files grows.
 (In the worst case, you might get an error)
 
-There is a faint chance that it might be sperior than `"shallow"` in terms of memory consumption.
+There is a faint chance that it might be superior to `"shallow"` in terms of memory consumption.
 But basically it seems no motivation to use this method.
 
 Main Commands
@@ -155,6 +155,16 @@ If you set this, `-s` or `--singlethread`, commands work on single thread.
 
 Unless you specify this option, commands work on multiple threads.
 
+### local
+
+`-l` or `--local` can be added for both commands sync and check.
+
+When you add this option, the command reads `.gitwire_local` from the current
+working directory instead of reading `.gitwire` from the repository root.
+
+This is useful when you want to maintain a local override of the wire
+configuration without committing it to the repository.
+
 Other Commands
 --------
 
@@ -164,7 +174,7 @@ Almost same as `sync` but it is performed based on arguments given instead `.git
 
     $ git wire direct-sync --help
 
-The meaning of arguments are equivalent to the conrresponding `.gitwire` JSON key-value.
+The meaning of arguments are equivalent to the corresponding `.gitwire` JSON key-value.
 
 ### direct-check
 
@@ -172,7 +182,7 @@ Almost same as `check` but it is performed based on arguments given instead `.gi
 
     $ git wire direct-check --help
 
-The meaning of arguments are equivalent to the conrresponding `.gitwire` JSON key-value.
+The meaning of arguments are equivalent to the corresponding `.gitwire` JSON key-value.
 
 
 A sample .gitwire
@@ -184,6 +194,12 @@ at revision v1.0.0 and v1.1.0 into `src_common_v1.0.0`, `src_common_v1.1.0` dire
 https://github.com/msr1k/git-wire/blob/main/.gitwire
 
 ## Changelog
+
+- v1.6.0 (2026/03/29)
+
+    - Added `--local` (`-l`) option to `sync` and `check` commands.
+      When specified, the command reads `.gitwire_local` from the current
+      working directory instead of `.gitwire` from the repository root.
 
 - v1.5.0 (2024/09/6)
 
@@ -197,7 +213,7 @@ https://github.com/msr1k/git-wire/blob/main/.gitwire
 
 - v1.3.1 (2024/06/09)
 
-    - Some document and output enahancements. (README, `--help` and console output format)
+    - Some document and output enhancements. (README, `--help` and console output format)
     - Color output support.
 
 - v1.3.0 (2024/06/08)
@@ -239,7 +255,7 @@ https://github.com/msr1k/git-wire/blob/main/.gitwire
 
 - v1.1.0
 
-    Added optional `"mtd"` (method) setting which can control the way to chekcout target source code.
+    Added optional `"mtd"` (method) setting which can control the way to checkout target source code.
 
 - v1.0.1
 

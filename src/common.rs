@@ -55,6 +55,7 @@ pub struct Parsed {
 
 pub enum Target {
     Declared(Option<String>),
+    Local(Option<String>),
     Direct(Parsed),
 }
 
