@@ -4,7 +4,6 @@ use std::sync::Arc;
 use cause::Cause;
 use cause::cause;
 use folder_compare::FolderCompare;
-use temp_dir::TempDir;
 
 use crate::common;
 use crate::common::Target;
@@ -22,13 +21,13 @@ impl Operation for CheckOperation {
         prefix: &str,
         parsed: &Parsed,
         rootdir: &String,
-        tempdir: &TempDir,
+        tempdir: &std::path::Path,
     ) -> Result<bool, Cause<ErrorType>> {
         compare_with_temp(
             prefix,
             parsed,
             rootdir,
-            tempdir.path(),
+            tempdir,
         )
     }
 }
