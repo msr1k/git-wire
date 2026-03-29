@@ -111,7 +111,7 @@ fn parallel(
     let operation = operation.clone();
 
     // Channel to send (prefix, parsed, Arc<TempDir>) from producers to consumer
-    let dedup_map = Arc::new(Mutex::new(HashMap::<String, Arc<TempDir>>::new()));
+    let dedup_map = Arc::new(Mutex::new(HashMap::<String, Arc<Mutex<Option<TempDir>>>>::new()));
 
     // Spawn producers to prepare tempdirs (deduplicating by url+rev+mtd) and send messages
     let produce_results: Result<Vec<bool>, Cause<ErrorType>> = std::thread::scope(|s| {
@@ -130,30 +130,35 @@ fn parallel(
 
                     // Try to get existing TempDir under lock, then drop lock before IO
                     let td_arc_opt = {
-                        let map = dedup_map.lock().map_err(|_| cause!(ErrorType::TempDirCreationError))?;
-                        map.get(&key).cloned()
-                    };
-
-                    if let Some(td_arc) = td_arc_opt {
-                        println!("  - {prefix}reuse existing clone: {} ({})", parsed.url, parsed.rev);
-                        tx.send((prefix, parsed, td_arc)).map_err(|_| cause!(ErrorType::TempDirCreationError))?;
-                        Ok(true)
-                    } else {
-                        // Not found — perform fetch without holding the global lock
-                        let tempdir = common::fetch::fetch_target_to_tempdir(&prefix, &parsed)?;
-                        let td_arc = Arc::new(tempdir);
-                        // Try to insert; another thread may have inserted in the meantime.
-                        {
-                            let mut map = dedup_map.lock().map_err(|_| cause!(ErrorType::TempDirCreationError))?;
-                            let existing = map.get(&key).cloned();
-                            if let Some(existing_arc) = existing {
-                                tx.send((prefix, parsed, existing_arc)).map_err(|_| cause!(ErrorType::TempDirCreationError))?;
-                            } else {
-                                map.insert(key.clone(), td_arc.clone());
-                                tx.send((prefix, parsed, td_arc)).map_err(|_| cause!(ErrorType::TempDirCreationError))?;
+                        let mut map = dedup_map.lock().map_err(|_| cause!(ErrorType::TempDirCreationError))?;
+                        let val = map.get(&key).cloned();
+                        match val {
+                            Some(v) => {
+                                // wait for a while to be unlocked
+                                v.clone()
+                            },
+                            None => {
+                                let v = Arc::new(Mutex::new(None));
+                                map.insert(key.clone(), v.clone());
+                                v.clone()
                             }
                         }
-                        Ok(true)
+                    };
+                    let mut td_arc_opt = td_arc_opt.lock().unwrap();
+
+                    match td_arc_opt.as_ref() {
+                        Some(td_arc) => {
+                            println!("  - {prefix}reuse existing clone: {} ({})", parsed.url, parsed.rev);
+                            tx.send((prefix, parsed, Arc::new(td_arc.clone()))).map_err(|_| cause!(ErrorType::TempDirCreationError))?;
+                            Ok(true)
+                        },
+                        None => {
+                            // Not found — perform fetch without holding the global lock
+                            let tempdir = common::fetch::fetch_target_to_tempdir(&prefix, &parsed)?;
+                            *td_arc_opt = Some(tempdir.clone());
+                            tx.send((prefix, parsed, Arc::new(tempdir))).map_err(|_| cause!(ErrorType::TempDirCreationError))?;
+                            Ok(true)
+                        }
                     }
                 }
             });
