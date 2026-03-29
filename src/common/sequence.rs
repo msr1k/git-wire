@@ -102,43 +102,75 @@ fn parallel(
     operation: Arc<dyn Operation + Send + Sync>,
 ) -> Result<bool, Cause<ErrorType>> {
     use colored::*;
+    use std::sync::Mutex;
+    use std::collections::HashMap;
+    use std::sync::mpsc;
 
     let len = parsed.len();
     let operation = operation.clone();
 
-    let results: Vec<_> = std::thread::scope(|s| {
-        let results: Vec<_> = parsed.into_iter().enumerate().map(|(i, parsed)| {
-            s.spawn({
-                let rootdir = rootdir.clone();
-                let operation = operation.clone();
-                move || -> Result<bool, Cause<ErrorType>> {
-                    let prefix = format!("No.{i} ");
-                    println!("{}", format!(">> {}({}/{}) started{}", prefix, i + 1, len, additional_message(&parsed)).blue());
+    // Channel to send (prefix, parsed, Arc<TempDir>) from producers to consumer
+    let (tx, rx) = mpsc::channel::<(String, Parsed, Arc<TempDir>)>();
+    let dedup_map = Arc::new(Mutex::new(HashMap::<String, Arc<TempDir>>::new()));
+
+    // Spawn producers to prepare tempdirs (deduplicating by url+rev+mtd) and send messages
+    let produce_results: Vec<_> = std::thread::scope(|s| {
+        let handles: Vec<_> = parsed.into_iter().enumerate().map(|(i, parsed)| {
+            let tx = tx.clone();
+            let dedup_map = dedup_map.clone();
+            let rootdir = rootdir.clone();
+            let operation = operation.clone();
+            s.spawn(move || -> Result<bool, Cause<ErrorType>> {
+                let prefix = format!("No.{i} ");
+                println!("{}", format!(">> {}({}/{}) started{}", prefix, i + 1, len, additional_message(&parsed)).blue());
+
+                // key for deduplication
+                let key = format!("{}|{}|{:?}", parsed.url, parsed.rev, parsed.mtd);
+
+                // Acquire lock and check or create TempDir
+                let mut map = dedup_map.lock().map_err(|_| cause!(ErrorType::TempDirCreationError))?;
+                if let Some(td) = map.get(&key) {
+                    let td_arc = td.clone();
+                    drop(map);
+                    tx.send((prefix, parsed, td_arc)).map_err(|_| cause!(ErrorType::TempDirCreationError))?;
+                    Ok(true)
+                } else {
+                    // Create tempdir and store as Arc
                     let tempdir = common::fetch::fetch_target_to_tempdir(&prefix, &parsed)?;
-                    let success = operation.operate(&prefix, &parsed, &rootdir, &tempdir)?;
-                    if success {
-                        println!("{}", format!(">> {}({}/{}) succeeded{}", prefix, i + 1, len, additional_message(&parsed)).blue());
-                        Ok(true)
-                    } else {
-                        println!("{}", format!(">> {}({}/{}) failed{}", prefix, i + 1, len, additional_message(&parsed)).magenta());
-                        Ok(false)
-                    }
+                    let td_arc = Arc::new(tempdir);
+                    map.insert(key, td_arc.clone());
+                    drop(map);
+                    tx.send((prefix, parsed, td_arc)).map_err(|_| cause!(ErrorType::TempDirCreationError))?;
+                    Ok(true)
                 }
             })
         }).collect();
-        results.into_iter().map(|h| h.join().unwrap()).collect()
+        handles.into_iter().map(|h| h.join().unwrap()).collect()
     });
-    println!("{}", format!(">> All check tasks have done!\n").blue());
 
-    let result = if let Some(_) = results.iter().find(|r| matches!(r, Ok(false))) {
-        Ok(false)
-    } else {
-        Ok(true)
-    };
-    if let Some(err) = results.into_iter().find(|r| matches!(r, Err(..))) {
+    // Check producer errors
+    if let Some(err) = produce_results.into_iter().find(|r| matches!(r, Err(..))) {
         return err;
     }
-    result
+
+    // All producers finished; drop the original sender so receiver iterator ends when all clones are dropped
+    drop(tx);
+
+    // Consume messages serially and run operation
+    let mut overall = true;
+    for (prefix, parsed, tempdir_arc) in rx {
+        let success = operation.operate(&prefix, &parsed, &rootdir, &*tempdir_arc)?;
+        if success {
+            println!("{}", format!(">> {} succeeded{}", prefix, additional_message(&parsed)).blue());
+        } else {
+            println!("{}", format!(">> {} failed{}", prefix, additional_message(&parsed)).magenta());
+            overall = false;
+        }
+        println!("");
+    }
+
+    println!("{}", format!(">> All check tasks have done!\n").blue());
+    Ok(overall)
 }
 
 fn additional_message(parsed: &Parsed) -> String {
