@@ -195,6 +195,12 @@ https://github.com/msr1k/git-wire/blob/main/.gitwire
 
 ## Changelog
 
+- v1.6.0 (2026/03/29)
+
+    - Added `--local` (`-l`) option to `sync` and `check` commands.
+      When specified, the command reads `.gitwire_local` from the current
+      working directory instead of `.gitwire` from the repository root.
+
 - v1.5.0 (2024/09/6)
 
     - Added `direct-sync` and `direct-check` commands
