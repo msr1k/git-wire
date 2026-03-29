@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use std::path::Path;
 
 use cause::Cause;
 use cause::cause;
@@ -21,7 +22,7 @@ pub trait Operation {
         prefix: &str,
         parsed: &Parsed,
         rootdir: &String,
-        tempdir: &TempDir,
+        workdir: &Path,
     ) -> Result<bool, Cause<ErrorType>>;
 }
 
@@ -86,7 +87,7 @@ fn single(
     for (i, parsed) in parsed.iter().enumerate() {
         println!(">> {}/{} started{}", i + 1, len, additional_message(&parsed));
         let tempdir = common::fetch::fetch_target_to_tempdir("", parsed)?;
-        let success = operation.operate("", &parsed, &rootdir, &tempdir)?;
+        let success = operation.operate("", &parsed, &rootdir, tempdir.path())?;
         if !success {
             result = false;
         }
@@ -102,43 +103,106 @@ fn parallel(
     operation: Arc<dyn Operation + Send + Sync>,
 ) -> Result<bool, Cause<ErrorType>> {
     use colored::*;
+    use std::sync::Mutex;
+    use std::collections::HashMap;
+    use std::sync::mpsc;
 
     let len = parsed.len();
     let operation = operation.clone();
 
-    let results: Vec<_> = std::thread::scope(|s| {
-        let results: Vec<_> = parsed.into_iter().enumerate().map(|(i, parsed)| {
+    // Channel to send (prefix, parsed, Arc<TempDir>) from producers to consumer
+    let dedup_map = Arc::new(Mutex::new(HashMap::<String, Arc<Mutex<Option<TempDir>>>>::new()));
+
+    // Spawn producers to prepare tempdirs (deduplicating by url+rev+mtd) and send messages
+    let produce_results: Result<Vec<bool>, Cause<ErrorType>> = std::thread::scope(|s| {
+        let handles: Vec<_> = parsed.into_iter().enumerate().map(|(i, parsed)| {
+            let (tx, rx) = mpsc::channel::<(String, Parsed, Arc<TempDir>)>();
+
+            s.spawn({
+                let dedup_map = dedup_map.clone();
+                let prefix = format!("No.{} ", i + 1);
+
+                move || -> Result<bool, Cause<ErrorType>> {
+                    println!("{}", format!(">> {}({}/{}) started{}", prefix, i + 1, len, additional_message(&parsed)).blue());
+
+                    // key for deduplication (stable string for Method)
+                    let key = create_parallel_fetch_key(&parsed);
+
+                    // Try to get existing TempDir mutex or create it
+                    let td_arc_opt = {
+                        let mut map = dedup_map.lock().map_err(|_| cause!(ErrorType::TempDirCreationError))?;
+                        let val = map.get(&key).cloned();
+                        match val {
+                            Some(v) => {
+                                v.clone()
+                            },
+                            None => {
+                                let v = Arc::new(Mutex::new(None));
+                                map.insert(key.clone(), v.clone());
+                                v.clone()
+                            }
+                        }
+                    };
+                    let mut td_arc_opt = td_arc_opt.lock().unwrap();
+
+                    match td_arc_opt.as_ref() {
+                        Some(td_arc) => {
+                            // tempdir has been set already
+                            // no need to perform fetch, just use it.
+                            println!("  - {prefix}reuse existing clone: {} ({})", parsed.url, parsed.rev);
+                            tx.send((prefix, parsed, Arc::new(td_arc.clone())))
+                                .map_err(|_| cause!(ErrorType::TempDirCreationError))?;
+                            Ok(true)
+                        },
+                        None => {
+                            // tempdir has not been set
+                            // perform fetch and set earned tempdir value to the map
+                            let tempdir = common::fetch::fetch_target_to_tempdir(&prefix, &parsed)?;
+                            *td_arc_opt = Some(tempdir.clone());
+                            tx.send((prefix, parsed, Arc::new(tempdir)))
+                                .map_err(|_| cause!(ErrorType::TempDirCreationError))?;
+                            Ok(true)
+                        }
+                    }
+                }
+            });
+
             s.spawn({
                 let rootdir = rootdir.clone();
                 let operation = operation.clone();
+
                 move || -> Result<bool, Cause<ErrorType>> {
-                    let prefix = format!("No.{i} ");
-                    println!("{}", format!(">> {}({}/{}) started{}", prefix, i + 1, len, additional_message(&parsed)).blue());
-                    let tempdir = common::fetch::fetch_target_to_tempdir(&prefix, &parsed)?;
-                    let success = operation.operate(&prefix, &parsed, &rootdir, &tempdir)?;
-                    if success {
-                        println!("{}", format!(">> {}({}/{}) succeeded{}", prefix, i + 1, len, additional_message(&parsed)).blue());
-                        Ok(true)
+                    if let Ok((prefix, parsed, tempdir_arc)) = rx.recv() {
+                        let success = operation.operate(&prefix, &parsed, &rootdir, tempdir_arc.path())?;
+                        if success {
+                            println!("{}", format!(">> {} succeeded{}", prefix, additional_message(&parsed)).blue());
+                            Ok(true)
+                        } else {
+                            println!("{}", format!(">> {} failed{}", prefix, additional_message(&parsed)).magenta());
+                            Ok(false)
+                        }
                     } else {
-                        println!("{}", format!(">> {}({}/{}) failed{}", prefix, i + 1, len, additional_message(&parsed)).magenta());
-                        Ok(false)
+                        Err(cause!(ErrorType::TempDirCreationError))
                     }
                 }
             })
         }).collect();
-        results.into_iter().map(|h| h.join().unwrap()).collect()
-    });
-    println!("{}", format!(">> All check tasks have done!\n").blue());
 
-    let result = if let Some(_) = results.iter().find(|r| matches!(r, Ok(false))) {
-        Ok(false)
-    } else {
-        Ok(true)
-    };
-    if let Some(err) = results.into_iter().find(|r| matches!(r, Err(..))) {
-        return err;
+        handles.into_iter().map(|h| h.join().unwrap()).collect()
+    });
+
+    // Check producer errors and aggregate results
+    match produce_results {
+        Err(err) => Err(err),
+        Ok(results) => {
+            println!("{}", format!(">> All check tasks have done!\n").blue());
+            if results.iter().all(|r| *r) {
+                Ok(true)
+            } else {
+                Ok(false)
+            }
+        }
     }
-    result
 }
 
 fn additional_message(parsed: &Parsed) -> String {
@@ -148,6 +212,19 @@ fn additional_message(parsed: &Parsed) -> String {
         (None,       Some(ref dsc)) => format!(" ({})",     dsc),
         (None,       None)          => "".to_owned(),
     }
+}
+
+fn create_parallel_fetch_key(parsed: &Parsed) -> String {
+    // key for deduplication (stable string for Method)
+    let method_label = match &parsed.mtd {
+        Some(m) => match m {
+            crate::common::Method::Shallow => "shallow",
+            crate::common::Method::ShallowNoSparse => "shallow_no_sparse",
+            crate::common::Method::Partial => "partial",
+        },
+        None => "default",
+    };
+    format!("{}|{}|{}", parsed.url, parsed.rev, method_label)
 }
 
 #[cfg(test)]

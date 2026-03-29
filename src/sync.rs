@@ -6,7 +6,6 @@ use crate::common;
 use cause::Cause;
 use cause::cause;
 use fs_extra;
-use temp_dir::TempDir;
 
 use crate::common::Target;
 use crate::common::Parsed;
@@ -23,13 +22,13 @@ impl Operation for SyncOperation {
         prefix: &str,
         parsed: &Parsed,
         rootdir: &String,
-        tempdir: &TempDir,
+        tempdir: &std::path::Path,
     ) -> Result<bool, Cause<ErrorType>> {
         move_from_temp(
             prefix,
             parsed,
             rootdir,
-            tempdir.path(),
+            tempdir,
         ).map(|_| true)
     }
 }
@@ -68,7 +67,7 @@ fn move_from_temp(
             Err(cause)
         })?;
 
-    fs_extra::move_items(&[&from], &to, &opt)
+    fs_extra::copy_items(&[&from], &to, &opt)
         .or_else(|e| {
             let cause = cause!(MoveFromTempToDestError).src(e)
                 .msg(format!("Could not copy from {:?} to {:?}", from, to));

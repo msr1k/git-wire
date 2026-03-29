@@ -19,8 +19,8 @@ pub fn fetch_target_to_tempdir(prefix: &str, parsed: &Parsed)
     let tempdir = TempDir::with_prefix(prefix)
         .or_else(|e| Err(cause!(TempDirCreationError).src(e)))?;
 
-    std::env::set_current_dir(tempdir.path())
-        .or_else(|e| Err(cause!(GitCheckoutChangeDirectoryError).src(e)))?;
+    // Do not change the process-wide current directory here.
+    // Commands will operate on `path` via `-C` or current_dir per-command instead.
 
     git_clone(prefix, tempdir.path(), parsed)?;
 
@@ -40,9 +40,8 @@ fn git_clone(prefix: &str, path: &Path, parsed: &Parsed) -> Result<(), Cause<Err
     println!("  - {prefix}clone --no-checkout: {}", parsed.url);
 
     let out = Command::new("git")
+        .current_dir(path)
         .args([
-            "-C",
-            path.to_str().unwrap(),
             "clone",
             "--depth", "1",
             "--filter=blob:none",
@@ -73,9 +72,8 @@ fn git_checkout_partial(prefix: &str, path: &Path, parsed: &Parsed) -> Result<()
     };
 
     let out = Command::new("git")
+        .current_dir(path)
         .args([
-            "-C",
-            path.to_str().unwrap(),
             "checkout",
             rev.as_ref(),
             "--",
@@ -122,9 +120,8 @@ fn git_checkout_shallow_core(prefix: &str, path: &Path, parsed: &Parsed, use_spa
         };
 
         let out = Command::new("git")
+            .current_dir(path)
             .args([
-                "-C",
-                path.to_str().unwrap(),
                 "sparse-checkout",
                 "set",
                 "--no-cone",
@@ -141,9 +138,8 @@ fn git_checkout_shallow_core(prefix: &str, path: &Path, parsed: &Parsed, use_spa
     }
 
     let out = Command::new("git")
+        .current_dir(path)
         .args([
-            "-C",
-            path.to_str().unwrap(),
             "fetch",
             "--depth",
             "1",
@@ -160,9 +156,8 @@ fn git_checkout_shallow_core(prefix: &str, path: &Path, parsed: &Parsed, use_spa
     }
 
     let out = Command::new("git")
+        .current_dir(path)
         .args([
-            "-C",
-            path.to_str().unwrap(),
             "checkout",
             "FETCH_HEAD",
         ])
@@ -181,9 +176,8 @@ fn git_checkout_shallow_core(prefix: &str, path: &Path, parsed: &Parsed, use_spa
 
 fn identify_commit_hash(path: &Path, parsed: &Parsed) -> Result<Option<String>, Cause<ErrorType>> {
     let out = Command::new("git")
+        .current_dir(path)
         .args([
-            "-C",
-            path.to_str().unwrap(),
             "ls-remote",
             "--heads",
             "--tags",
@@ -202,7 +196,8 @@ fn identify_commit_hash(path: &Path, parsed: &Parsed) -> Result<Option<String>, 
         .or_else(|e| Err(cause!(GitLsRemoteCommandStdoutDecodeError).src(e)))?;
     let lines = stdout.lines();
 
-    let re_in_line = Regex::new(&format!("^((?:[0-9a-fA-F]){{40}})\\s+(.*{})(\\^\\{{\\}})?$", parsed.rev))
+    let rev_escaped = regex::escape(&parsed.rev);
+    let re_in_line = Regex::new(&format!("^((?:[0-9a-fA-F]){{40}})\\s+(.*{})(\\^\\{{\\}})?$", rev_escaped))
         .or_else(|e| Err(cause!(GitLsRemoteCommandStdoutRegexError).src(e)))?;
 
     let matched = lines.filter_map(|l| {
@@ -231,5 +226,33 @@ fn identify_commit_hash(path: &Path, parsed: &Parsed) -> Result<Option<String>, 
         // There is no items among refs/heads and refs/tags.
         // `parsed.rev` must be a commit hash value or at least part of that.
         Ok(None)
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::env;
+
+    #[test]
+    fn fetch_does_not_change_cwd_on_error() {
+        let before = env::current_dir().unwrap();
+        let parsed = Parsed {
+            name: None,
+            dsc: None,
+            url: "file:///nonexistent/repo.git".to_string(),
+            rev: "main".to_string(),
+            src: ".".to_string(),
+            dst: ".".to_string(),
+            mtd: None,
+        };
+
+        // We expect this to return Err because the repository does not exist,
+        // but it must not change the process-wide current directory.
+        let _ = fetch_target_to_tempdir("test", &parsed);
+
+        let after = env::current_dir().unwrap();
+        assert_eq!(before, after);
     }
 }
