@@ -7,12 +7,12 @@
 //   - The v1.6.0 Changelog entry documents the --local / -l option
 
 const BIN: &str = env!("CARGO_BIN_EXE_git-wire");
-const EXPECTED_VERSION: &str = "1.6.0";
+const EXPECTED_VERSION: &str = "1.8.0";
 
 // --- --version flag ---
 
 #[test]
-fn version_flag_outputs_1_6_0() {
+fn version_flag_outputs_1_8_0() {
     // Given: the binary is invoked with --version
     let output = std::process::Command::new(BIN)
         .arg("--version")
@@ -31,7 +31,7 @@ fn version_flag_outputs_1_6_0() {
 // --- CARGO_PKG_VERSION ---
 
 #[test]
-fn cargo_pkg_version_is_1_6_0() {
+fn cargo_pkg_version_is_1_8_0() {
     // Given: the package version embedded at compile time
     let pkg_version = env!("CARGO_PKG_VERSION");
 
@@ -45,25 +45,35 @@ fn cargo_pkg_version_is_1_6_0() {
 // --- README.md Changelog ---
 
 #[test]
-fn readme_changelog_has_v1_6_0_entry() {
+fn readme_changelog_has_v1_8_0_entry() {
     // Given: README.md at the repository root
     let readme = std::fs::read_to_string("README.md").expect("README.md must exist");
 
     // Then: the Changelog section contains a v1.6.0 entry
     assert!(
-        readme.contains("v1.6.0"),
-        "README.md Changelog should contain 'v1.6.0'"
+        readme.contains("v1.8.0"),
+        "README.md Changelog should contain 'v1.8.0'"
     );
 }
 
 #[test]
-fn readme_changelog_v1_6_0_entry_appears_before_v1_5_0() {
+fn readme_changelog_v1_8_0_entry_appears_before_v1_5_0() {
     // Given: README.md at the repository root
     let readme = std::fs::read_to_string("README.md").expect("README.md must exist");
 
     // Then: v1.6.0 appears before v1.5.0 in the file (newer entries first)
+    let pos_1_8_0 = readme.find("v1.8.0").expect("v1.6.0 must exist in README.md");
+    let pos_1_7_0 = readme.find("v1.7.0").expect("v1.6.0 must exist in README.md");
     let pos_1_6_0 = readme.find("v1.6.0").expect("v1.6.0 must exist in README.md");
     let pos_1_5_0 = readme.find("v1.5.0").expect("v1.5.0 must exist in README.md");
+    assert!(
+        pos_1_8_0 < pos_1_7_0,
+        "v1.8.0 entry should appear before v1.7.0 in README.md Changelog"
+    );
+    assert!(
+        pos_1_7_0 < pos_1_6_0,
+        "v1.7.0 entry should appear before v1.6.0 in README.md Changelog"
+    );
     assert!(
         pos_1_6_0 < pos_1_5_0,
         "v1.6.0 entry should appear before v1.5.0 in README.md Changelog"

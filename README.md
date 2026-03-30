@@ -195,6 +195,10 @@ https://github.com/msr1k/git-wire/blob/main/.gitwire
 
 ## Changelog
 
+- v1.8.0 (2026/03/30)
+
+    Revert v1.7.0, because a problem was found.
+
 - v1.7.0 (2026/03/29)
 
     - Multi-threading performance improvements.
