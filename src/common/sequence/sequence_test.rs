@@ -9,6 +9,7 @@
 use std::sync::Arc;
 
 use cause::Cause;
+use temp_dir::TempDir;
 
 use crate::common::{ErrorType, Parsed, Target};
 use crate::common::ErrorType::*;
@@ -26,7 +27,7 @@ impl Operation for NeverCalledOperation {
         _prefix: &str,
         _parsed: &Parsed,
         _rootdir: &String,
-        _tempdir: &std::path::Path,
+        _tempdir: &TempDir,
     ) -> Result<bool, Cause<ErrorType>> {
         panic!("Operation.operate must not be called in this test");
     }
