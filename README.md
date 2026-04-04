@@ -195,6 +195,14 @@ https://github.com/msr1k/git-wire/blob/main/.gitwire
 
 ## Changelog
 
+- v1.9.0-rc (2026/04/04)
+
+    - v1.7.0 bug fixed version
+    - Multi-threading performance improvements.
+        - Reuses other temporary clones to checking or syncing.  
+          (It minimizes the number of clone operations.)
+    - No changes in functionality.
+
 - v1.8.0 (2026/03/30)
 
     Revert v1.7.0, because a problem was found.
