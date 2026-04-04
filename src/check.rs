@@ -35,7 +35,7 @@ impl Operation for CheckOperation {
 
 
 pub fn check(target: Target, mode: common::sequence::Mode) -> Result<bool, Cause<ErrorType>> {
-    println!("git-wire check started\n");
+    println!("git-wire {} check started\n", common::target_string(&target));
     let operation = Arc::new(CheckOperation {});
     let result = common::sequence::sequence(
         target,

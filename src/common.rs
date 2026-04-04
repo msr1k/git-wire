@@ -16,7 +16,6 @@ pub enum ErrorType {
     GitCloneCommandExitStatusError,
     GitCheckoutCommandError,
     GitCheckoutCommandExitStatusError,
-    GitCheckoutChangeDirectoryError,
     GitFetchCommandError,
     GitFetchCommandExitStatusError,
     MoveFromTempToDestError,
@@ -58,6 +57,14 @@ pub enum Target {
     Declared(Option<String>),
     Local(Option<String>),
     Direct(Parsed),
+}
+
+pub(super) fn target_string(target: &Target) -> &str {
+    match target {
+        Target::Declared(_) => "",
+        Target::Local(_) => "local",
+        Target::Direct(_) => "direct",
+    }
 }
 
 pub mod parse;

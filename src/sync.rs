@@ -34,9 +34,8 @@ impl Operation for SyncOperation {
     }
 }
 
-
 pub fn sync(target: Target, mode: common::sequence::Mode) -> Result<bool, Cause<ErrorType>> {
-    println!("git-wire sync started\n");
+    println!("git-wire {} sync started\n", common::target_string(&target));
     let operation = Arc::new(SyncOperation {});
     common::sequence::sequence(
         target,
@@ -68,7 +67,7 @@ fn move_from_temp(
             Err(cause)
         })?;
 
-    fs_extra::move_items(&[&from], &to, &opt)
+    fs_extra::copy_items(&[&from], &to, &opt)
         .or_else(|e| {
             let cause = cause!(MoveFromTempToDestError).src(e)
                 .msg(format!("Could not copy from {:?} to {:?}", from, to));
