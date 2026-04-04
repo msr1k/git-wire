@@ -6,7 +6,6 @@
 use std::sync::Mutex;
 
 use super::*;
-use crate::common::ErrorType::*;
 
 pub(crate) static FILE_LOCK: Mutex<()> = Mutex::new(());
 

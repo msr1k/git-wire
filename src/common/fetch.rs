@@ -202,7 +202,8 @@ fn identify_commit_hash(path: &Path, parsed: &Parsed) -> Result<Option<String>, 
         .or_else(|e| Err(cause!(GitLsRemoteCommandStdoutDecodeError).src(e)))?;
     let lines = stdout.lines();
 
-    let re_in_line = Regex::new(&format!("^((?:[0-9a-fA-F]){{40}})\\s+(.*{})(\\^\\{{\\}})?$", parsed.rev))
+    let rev_escaped = regex::escape(&parsed.rev);
+    let re_in_line = Regex::new(&format!("^((?:[0-9a-fA-F]){{40}})\\s+(.*{})(\\^\\{{\\}})?$", rev_escaped))
         .or_else(|e| Err(cause!(GitLsRemoteCommandStdoutRegexError).src(e)))?;
 
     let matched = lines.filter_map(|l| {

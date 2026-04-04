@@ -34,9 +34,8 @@ impl Operation for SyncOperation {
     }
 }
 
-
 pub fn sync(target: Target, mode: common::sequence::Mode) -> Result<bool, Cause<ErrorType>> {
-    println!("git-wire sync started\n");
+    println!("git-wire {} sync started\n", common::target_string(&target));
     let operation = Arc::new(SyncOperation {});
     common::sequence::sequence(
         target,
