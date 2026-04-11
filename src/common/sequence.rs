@@ -110,7 +110,7 @@ fn parallel(
     let operation = operation.clone();
 
     // Channel to send (prefix, parsed, Arc<TempDir>) from producers to consumer
-    let dedup_map = Arc::new(Mutex::new(HashMap::<String, Arc<Mutex<Option<TempDir>>>>::new()));
+    let dedup_map = Arc::new(Mutex::new(HashMap::<String, Arc<Mutex<Option<Arc<TempDir>>>>>::new()));
 
     // Spawn producers to prepare tempdirs (deduplicating by url+rev+mtd) and send messages
     let produce_results: Result<Vec<bool>, Cause<ErrorType>> = std::thread::scope(|s| {
@@ -149,7 +149,7 @@ fn parallel(
                             // tempdir has been set already
                             // no need to perform fetch, just use it.
                             println!("  - {prefix}reuse existing clone: {} ({})", parsed.url, parsed.rev);
-                            tx.send((prefix, parsed, Arc::new(td_arc.clone())))
+                            tx.send((prefix, parsed, td_arc.clone()))
                                 .map_err(|_| cause!(ErrorType::TempDirCreationError))?;
                             Ok(true)
                         },
@@ -157,8 +157,9 @@ fn parallel(
                             // tempdir has not been set
                             // perform fetch and set earned tempdir value to the map
                             let tempdir = common::fetch::fetch_target_to_tempdir(&prefix, &parsed)?;
+                            let tempdir = Arc::new(tempdir);
                             *td_arc_opt = Some(tempdir.clone());
-                            tx.send((prefix, parsed, Arc::new(tempdir)))
+                            tx.send((prefix, parsed, tempdir))
                                 .map_err(|_| cause!(ErrorType::TempDirCreationError))?;
                             Ok(true)
                         }
